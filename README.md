@@ -17,6 +17,8 @@ The initial Flutter foundation includes:
   destructive actions.
 - Shared Material dialog styling and responsive content width for Chrome and
   larger screens.
+- Settings sections are fully localized, including preferences, reminders,
+  privacy, accessibility, backup, and About content.
 - Camera capture and gallery image import through the native Android picker.
 - App-private persistent document metadata and source-file copies.
 - PDF import and text PDF export.

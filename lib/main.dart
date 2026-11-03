@@ -1707,150 +1707,170 @@ class SettingsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final english = _PathokLocale.of(context);
-    return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Row(
-            children: [
-              const _BrandMark(size: 48),
-              const SizedBox(width: 14),
-              Text(
-                english ? 'Settings' : 'সেটিংস',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Card(
-            child: Column(
+    return _ResponsiveContent(
+      child: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            Row(
               children: [
-                SwitchListTile(
-                  secondary: const Icon(PathokIcons.language),
-                  title: Text(english ? 'Language' : 'ভাষা'),
-                  subtitle: Text(english ? 'English' : 'বাংলা'),
-                  value: english,
-                  onChanged: onLanguageChanged,
-                ),
-                SwitchListTile(
-                  secondary: const Icon(PathokIcons.lock),
-                  title: Text(english ? 'App lock' : 'অ্যাপ লক'),
-                  subtitle: Text(
-                    english
-                        ? 'Use device biometrics or PIN'
-                        : 'ডিভাইসের biometrics বা PIN ব্যবহার করুন',
-                  ),
-                  value: lockEnabled,
-                  onChanged: onLockChanged,
+                const _BrandMark(size: 48),
+                const SizedBox(width: 14),
+                Text(
+                  english ? 'Settings' : 'সেটিংস',
+                  style: Theme.of(context).textTheme.headlineMedium,
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            english ? 'Reminders' : 'রিমাইন্ডার',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          if (reminders.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Text(
-                  english
-                      ? 'No reminders saved yet.'
-                      : 'এখনও কোনো reminder সংরক্ষণ করা হয়নি।',
-                ),
+            const SizedBox(height: 12),
+            Text(
+              english ? 'Preferences' : 'পছন্দ',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.w700,
               ),
-            )
-          else
-            ...reminders.map(
-              (reminder) => Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Card(
-                  child: ListTile(
-                    leading: const Icon(PathokIcons.alarm),
-                    title: Text(reminder.medicineName),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    secondary: const Icon(PathokIcons.language),
+                    title: Text(english ? 'Language' : 'ভাষা'),
+                    subtitle: Text(english ? 'English' : 'বাংলা'),
+                    value: english,
+                    onChanged: onLanguageChanged,
+                  ),
+                  SwitchListTile(
+                    secondary: const Icon(PathokIcons.lock),
+                    title: Text(english ? 'App lock' : 'অ্যাপ লক'),
                     subtitle: Text(
                       english
-                          ? '${reminder.hour.toString().padLeft(2, '0')}:${reminder.minute.toString().padLeft(2, '0')} • Verify instructions'
-                          : '${reminder.hour.toString().padLeft(2, '0')}:${reminder.minute.toString().padLeft(2, '0')} • ব্যবহার যাচাই করুন',
+                          ? 'Use device biometrics or PIN'
+                          : 'ডিভাইসের biometrics বা PIN ব্যবহার করুন',
                     ),
-                    trailing: IconButton(
-                      tooltip: english ? 'Delete reminder' : 'Reminder মুছুন',
-                      icon: const Icon(PathokIcons.trash),
-                      onPressed: () => onDeleteReminder(reminder),
+                    value: lockEnabled,
+                    onChanged: onLockChanged,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              english ? 'Reminders' : 'রিমাইন্ডার',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            if (reminders.isEmpty)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Text(
+                    english
+                        ? 'No reminders saved yet.'
+                        : 'এখনও কোনো reminder সংরক্ষণ করা হয়নি।',
+                  ),
+                ),
+              )
+            else
+              ...reminders.map(
+                (reminder) => Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Card(
+                    child: ListTile(
+                      leading: const Icon(PathokIcons.alarm),
+                      title: Text(reminder.medicineName),
+                      subtitle: Text(
+                        english
+                            ? '${reminder.hour.toString().padLeft(2, '0')}:${reminder.minute.toString().padLeft(2, '0')} • Verify instructions'
+                            : '${reminder.hour.toString().padLeft(2, '0')}:${reminder.minute.toString().padLeft(2, '0')} • ব্যবহার যাচাই করুন',
+                      ),
+                      trailing: IconButton(
+                        tooltip: english ? 'Delete reminder' : 'Reminder মুছুন',
+                        icon: const Icon(PathokIcons.trash),
+                        onPressed: () => onDeleteReminder(reminder),
+                      ),
+                      onTap: () => onEditReminder(reminder),
                     ),
-                    onTap: () => onEditReminder(reminder),
                   ),
                 ),
               ),
+            const SizedBox(height: 12),
+            Text(
+              english
+                  ? 'Privacy & accessibility'
+                  : 'গোপনীয়তা ও অ্যাক্সেসিবিলিটি',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          const SizedBox(height: 12),
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(PathokIcons.wifi),
-                  title: Text(english ? 'Offline mode' : 'অফলাইন মোড'),
-                  subtitle: Text(
-                    english
-                        ? 'Core tasks work without internet'
-                        : 'মূল কাজগুলো ইন্টারনেট ছাড়াই চলবে',
+            const SizedBox(height: 8),
+            Card(
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(PathokIcons.wifi),
+                    title: Text(english ? 'Offline mode' : 'অফলাইন মোড'),
+                    subtitle: Text(
+                      english
+                          ? 'Core tasks work without internet'
+                          : 'মূল কাজগুলো ইন্টারনেট ছাড়াই চলবে',
+                    ),
                   ),
-                ),
-                ListTile(
-                  leading: const Icon(PathokIcons.accessible),
-                  title: Text(english ? 'Accessibility' : 'অ্যাক্সেসিবিলিটি'),
-                  subtitle: Text(
-                    english
-                        ? 'TalkBack and large text are supported'
-                        : 'TalkBack এবং বড় লেখা সমর্থিত',
+                  ListTile(
+                    leading: const Icon(PathokIcons.accessible),
+                    title: Text(english ? 'Accessibility' : 'অ্যাক্সেসিবিলিটি'),
+                    subtitle: Text(
+                      english
+                          ? 'TalkBack and large text are supported'
+                          : 'TalkBack এবং বড় লেখা সমর্থিত',
+                    ),
                   ),
-                ),
-                ListTile(
-                  leading: const Icon(PathokIcons.trash),
-                  title: Text(
-                    english
-                        ? 'Delete all local data'
-                        : 'সব স্থানীয় তথ্য মুছুন',
+                  ListTile(
+                    leading: const Icon(PathokIcons.trash),
+                    title: Text(
+                      english
+                          ? 'Delete all local data'
+                          : 'সব স্থানীয় তথ্য মুছুন',
+                    ),
+                    onTap: onDeleteAllData,
                   ),
-                  onTap: onDeleteAllData,
-                ),
-                ListTile(
-                  leading: const Icon(Icons.upload_file_outlined),
-                  title: Text(
-                    english
-                        ? 'Export encrypted backup'
-                        : 'Encrypted backup export',
+                  ListTile(
+                    leading: const Icon(Icons.upload_file_outlined),
+                    title: Text(
+                      english
+                          ? 'Export encrypted backup'
+                          : 'Encrypted backup export',
+                    ),
+                    subtitle: Text(
+                      english
+                          ? 'Save document data to an encrypted file'
+                          : 'নথির তথ্য একটি encrypted ফাইলে রাখুন',
+                    ),
+                    onTap: onExportBackup,
                   ),
-                  subtitle: Text(
-                    english
-                        ? 'Save document data to an encrypted file'
-                        : 'নথির তথ্য একটি encrypted ফাইলে রাখুন',
+                  ListTile(
+                    leading: const Icon(Icons.download_outlined),
+                    title: Text(english ? 'Restore backup' : 'Backup restore'),
+                    subtitle: Text(
+                      english
+                          ? 'Restore data from a previous Pathok backup'
+                          : 'আগের Pathok backup থেকে তথ্য ফিরিয়ে আনুন',
+                    ),
+                    onTap: onImportBackup,
                   ),
-                  onTap: onExportBackup,
-                ),
-                ListTile(
-                  leading: const Icon(Icons.download_outlined),
-                  title: Text(english ? 'Restore backup' : 'Backup restore'),
-                  subtitle: Text(
-                    english
-                        ? 'Restore data from a previous Pathok backup'
-                        : 'আগের Pathok backup থেকে তথ্য ফিরিয়ে আনুন',
-                  ),
-                  onTap: onImportBackup,
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          AboutListTile(
-            applicationName: english ? 'Pathok' : 'পাঠক',
-            applicationVersion: '0.1.0',
-            applicationLegalese: english
-                ? 'Every document has a voice.'
-                : 'প্রতিটি নথির একটি কণ্ঠ আছে।',
-          ),
-        ],
+            AboutListTile(
+              applicationName: english ? 'Pathok' : 'পাঠক',
+              applicationVersion: '0.1.0',
+              applicationLegalese: english
+                  ? 'Every document has a voice.'
+                  : 'প্রতিটি নথির একটি কণ্ঠ আছে।',
+            ),
+          ],
+        ),
       ),
     );
   }
