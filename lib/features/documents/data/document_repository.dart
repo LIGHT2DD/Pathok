@@ -24,7 +24,12 @@ class DocumentRepository {
       return LocalDocument.fromJson(value as Map<String, dynamic>);
     }).toList();
 
-    documents.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    documents.sort((a, b) {
+      if (a.isPinned != b.isPinned) {
+        return a.isPinned ? -1 : 1;
+      }
+      return b.updatedAt.compareTo(a.updatedAt);
+    });
     return documents;
   }
 
@@ -73,6 +78,22 @@ class DocumentRepository {
   ) async {
     target.title = newTitle;
     target.updatedAt = DateTime.now();
+    await saveDocuments(currentList);
+  }
+
+  /// Toggles document pinned status and re-sorts
+  Future<void> togglePinDocument(
+    List<LocalDocument> currentList,
+    LocalDocument target,
+  ) async {
+    target.isPinned = !target.isPinned;
+    target.updatedAt = DateTime.now();
+    currentList.sort((a, b) {
+      if (a.isPinned != b.isPinned) {
+        return a.isPinned ? -1 : 1;
+      }
+      return b.updatedAt.compareTo(a.updatedAt);
+    });
     await saveDocuments(currentList);
   }
 

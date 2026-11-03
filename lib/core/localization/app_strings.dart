@@ -60,6 +60,19 @@ class AppStrings {
   String get filterAll => isEnglish ? 'All' : 'সব';
   String get filterPhotos => isEnglish ? 'Photos' : 'ছবি';
   String get filterPdfs => isEnglish ? 'PDFs' : 'PDF';
+  String get categoryPrescriptions => isEnglish ? 'Prescriptions' : 'প্রেসক্রিপশন';
+  String get categoryBills => isEnglish ? 'Bills & Receipts' : 'রসিদ ও বিল';
+  String get categoryIdCards => isEnglish ? 'Cards & ID' : 'পরিচয়পত্র';
+  String get categoryGeneral => isEnglish ? 'Notes' : 'নোট';
+  String get pinDocument => isEnglish ? 'Pin to top' : 'উপরে পিন করুন';
+  String get unpinDocument => isEnglish ? 'Unpin' : 'পিন সরান';
+  String get pinned => isEnglish ? 'Pinned' : 'পিন করা';
+  String get todaysMedicines => isEnglish ? "Today's Medicines" : 'আজকের ওষুধ';
+  String get markTaken => isEnglish ? 'Mark as taken' : 'খেয়েছি';
+  String get taken => isEnglish ? 'Taken' : 'খাওয়া হয়েছে';
+  String get pending => isEnglish ? 'Pending' : 'বাকি আছে';
+  String get snooze10m => isEnglish ? 'Snooze 10m' : '১০ মি. পর';
+  String get allMedicinesTaken => isEnglish ? 'All medicines taken today!' : 'আজকের সব ওষুধ খাওয়া সম্পন্ন হয়েছে!';
   String get playingAudio => isEnglish ? 'Playing voice...' : 'ভয়েস চলছে...';
   String get audioSpeed => isEnglish ? 'Speed' : 'গতি';
 

@@ -9,6 +9,7 @@ class ReminderNotificationService {
 
   static final instance = ReminderNotificationService._();
   final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
+  static const int _audioNotificationId = 999999;
 
   Future<void> initialize() async {
     tz.initializeTimeZones();
@@ -46,13 +47,25 @@ class ReminderNotificationService {
       visibility: NotificationVisibility.private,
       enableVibration: true,
       playSound: true,
+      actions: <AndroidNotificationAction>[
+        AndroidNotificationAction(
+          'action_taken',
+          'খেয়েছি (Mark as Taken)',
+          showsUserInterface: true,
+        ),
+        AndroidNotificationAction(
+          'action_snooze',
+          '১০ মি. পর (Snooze 10m)',
+          showsUserInterface: false,
+        ),
+      ],
     );
 
     try {
       await _plugin.zonedSchedule(
         id: notificationId(reminder),
-        title: 'Pathok reminder',
-        body: 'Time to check your medicine schedule: ${reminder.medicineName}',
+        title: 'পাঠক ওষুধ অনুস্মারক (Pathok)',
+        body: 'ওষুধ খাওয়ার সময় হয়েছে: ${reminder.medicineName} (${reminder.instructions})',
         scheduledDate: scheduled,
         notificationDetails: const NotificationDetails(android: androidDetails),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -62,14 +75,56 @@ class ReminderNotificationService {
       // Fallback for devices restricting exact alarms
       await _plugin.zonedSchedule(
         id: notificationId(reminder),
-        title: 'Pathok reminder',
-        body: 'Time to check your medicine schedule: ${reminder.medicineName}',
+        title: 'পাঠক ওষুধ অনুস্মারক (Pathok)',
+        body: 'ওষুধ খাওয়ার সময় হয়েছে: ${reminder.medicineName} (${reminder.instructions})',
         scheduledDate: scheduled,
         notificationDetails: const NotificationDetails(android: androidDetails),
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         matchDateTimeComponents: DateTimeComponents.time,
       );
     }
+  }
+
+  /// Shows ongoing lock-screen and notification shade playback controls
+  Future<void> showAudioPlaybackNotification({
+    required String title,
+    required bool isPlaying,
+    required String voiceLabel,
+  }) async {
+    final androidDetails = AndroidNotificationDetails(
+      'pathok_audio_reader',
+      'Pathok Audio Reader',
+      channelDescription: 'Ongoing audio reader playback controls',
+      importance: Importance.low,
+      priority: Priority.low,
+      ongoing: isPlaying,
+      autoCancel: false,
+      showWhen: false,
+      actions: <AndroidNotificationAction>[
+        AndroidNotificationAction(
+          'audio_toggle',
+          isPlaying ? 'বিরতি (Pause)' : 'চালু (Resume)',
+          showsUserInterface: true,
+        ),
+        const AndroidNotificationAction(
+          'audio_stop',
+          'থামুন (Stop)',
+          showsUserInterface: true,
+        ),
+      ],
+    );
+
+    await _plugin.show(
+      id: _audioNotificationId,
+      title: title,
+      body: isPlaying ? 'পাঠক ভয়েস পড়ছে ($voiceLabel)' : 'ভয়েস স্থগিত আছে ($voiceLabel)',
+      notificationDetails: NotificationDetails(android: androidDetails),
+    );
+  }
+
+  /// Cancels the ongoing lock-screen and status-bar audio notification
+  Future<void> cancelAudioPlaybackNotification() async {
+    await _plugin.cancel(id: _audioNotificationId);
   }
 
   Future<void> cancelAll() => _plugin.cancelAll();
@@ -82,4 +137,3 @@ class ReminderNotificationService {
     return (reminder.id.isNotEmpty ? reminder.id : '${reminder.medicineName}|${reminder.hour}:${reminder.minute}').hashCode & 0x7fffffff;
   }
 }
-

@@ -92,6 +92,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
     });
 
     _tts.setCompletionHandler(() {
+      ReminderNotificationService.instance.cancelAudioPlaybackNotification();
       if (mounted) {
         setState(() {
           _speaking = false;
@@ -143,6 +144,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
     _controller.dispose();
     _karaokeWordRange.dispose();
     _tts.stop();
+    ReminderNotificationService.instance.cancelAudioPlaybackNotification();
     _ocrService.close();
     super.dispose();
   }
@@ -163,6 +165,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
 
       _controller.text = text;
       widget.document.text = text;
+      widget.document.category = LocalDocument.detectCategory(text, widget.document.title);
       widget.document.updatedAt = DateTime.now();
       widget.onChanged();
 
@@ -205,6 +208,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
 
       _controller.text = extractedText;
       widget.document.text = extractedText;
+      widget.document.category = LocalDocument.detectCategory(extractedText, widget.document.title);
       widget.document.updatedAt = DateTime.now();
       widget.onChanged();
 
@@ -338,10 +342,16 @@ class _DocumentScreenState extends State<DocumentScreen> {
       _paused = true;
     });
     await _tts.stop();
+    await ReminderNotificationService.instance.showAudioPlaybackNotification(
+      title: widget.document.title,
+      isPlaying: false,
+      voiceLabel: _speechLang == 'bn-BD' ? 'বাংলা' : 'English',
+    );
   }
 
   Future<void> _stopSpeech() async {
     await _tts.stop();
+    await ReminderNotificationService.instance.cancelAudioPlaybackNotification();
     if (mounted) {
       setState(() {
         _speaking = false;
@@ -461,6 +471,12 @@ class _DocumentScreenState extends State<DocumentScreen> {
         _paused = false;
       });
     }
+
+    await ReminderNotificationService.instance.showAudioPlaybackNotification(
+      title: widget.document.title,
+      isPlaying: true,
+      voiceLabel: targetLang == 'bn-BD' ? 'বাংলা' : 'English',
+    );
 
     // If text exceeds Android 4000 char utterance limit, split and speak safely
     if (textToSpeak.length > 3500) {

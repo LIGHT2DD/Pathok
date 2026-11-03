@@ -41,6 +41,24 @@ void main() {
       expect(updated.hour, equals(20));
       expect(updated.minute, equals(15));
     });
+
+    test('isTakenToday correctly detects today date tracking', () {
+      final now = DateTime.now();
+      final todayStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+      final pending = MedicineReminder(
+        medicineName: 'Napa',
+        instructions: 'খাবার পর',
+        hour: 8,
+        minute: 0,
+      );
+      expect(pending.isTakenToday, isFalse);
+
+      final taken = pending.copyWith(lastTakenDate: todayStr);
+      expect(taken.isTakenToday, isTrue);
+
+      final cleared = taken.copyWith(clearLastTaken: true);
+      expect(cleared.isTakenToday, isFalse);
+    });
   });
 }
-

@@ -108,4 +108,17 @@ class PrescriptionService {
     await deleteReminder(previous);
     await saveReminder(replacement);
   }
+
+  /// Toggles today's taken status for a reminder
+  Future<MedicineReminder> toggleReminderTaken(MedicineReminder reminder) async {
+    final now = DateTime.now();
+    final todayStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+    final updated = reminder.isTakenToday
+        ? reminder.copyWith(clearLastTaken: true)
+        : reminder.copyWith(lastTakenDate: todayStr);
+
+    await replaceReminder(reminder, updated);
+    return updated;
+  }
 }

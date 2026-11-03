@@ -7,6 +7,7 @@ class MedicineReminder {
     required this.instructions,
     required this.hour,
     required this.minute,
+    this.lastTakenDate,
     DateTime? confirmedAt,
   })  : id = id ?? _generateId(),
         confirmedAt = confirmedAt ?? DateTime.now();
@@ -16,6 +17,7 @@ class MedicineReminder {
   final String instructions;
   final int hour;
   final int minute;
+  final String? lastTakenDate;
   final DateTime confirmedAt;
 
   static String _generateId() {
@@ -26,12 +28,27 @@ class MedicineReminder {
     return values.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 
-  MedicineReminder copyWith({int? hour, int? minute}) => MedicineReminder(
+  /// Whether the user has marked this dose as taken today
+  bool get isTakenToday {
+    if (lastTakenDate == null) return false;
+    final now = DateTime.now();
+    final todayStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    return lastTakenDate == todayStr;
+  }
+
+  MedicineReminder copyWith({
+    int? hour,
+    int? minute,
+    String? lastTakenDate,
+    bool clearLastTaken = false,
+  }) =>
+      MedicineReminder(
         id: id,
         medicineName: medicineName,
         instructions: instructions,
         hour: hour ?? this.hour,
         minute: minute ?? this.minute,
+        lastTakenDate: clearLastTaken ? null : (lastTakenDate ?? this.lastTakenDate),
         confirmedAt: confirmedAt,
       );
 
@@ -41,6 +58,7 @@ class MedicineReminder {
         'instructions': instructions,
         'hour': hour,
         'minute': minute,
+        if (lastTakenDate != null) 'lastTakenDate': lastTakenDate,
         'confirmedAt': confirmedAt.toIso8601String(),
       };
 
@@ -51,8 +69,8 @@ class MedicineReminder {
       instructions: json['instructions'] as String? ?? '',
       hour: json['hour'] as int? ?? 9,
       minute: json['minute'] as int? ?? 0,
+      lastTakenDate: json['lastTakenDate'] as String?,
       confirmedAt: DateTime.tryParse(json['confirmedAt'] as String? ?? ''),
     );
   }
 }
-

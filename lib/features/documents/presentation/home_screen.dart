@@ -148,16 +148,35 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${strings.pdfExportSuccess}: ${exportedFile.path.split('/').last}'),
+            content: Text(
+              '${strings.pdfExportSuccess}: ${exportedFile.path.split('/').last}',
+            ),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${strings.error}: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('${strings.error}: $e')));
       }
+    }
+  }
+
+  Future<void> _togglePinDocument(LocalDocument document) async {
+    await _documentRepository.togglePinDocument(_documents, document);
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _toggleReminderTaken(MedicineReminder reminder) async {
+    final updated = await _prescriptionService.toggleReminderTaken(reminder);
+    if (mounted) {
+      setState(() {
+        final index = _reminders.indexWhere((r) => r.id == reminder.id);
+        if (index >= 0) {
+          _reminders[index] = updated;
+        }
+      });
     }
   }
 
@@ -233,23 +252,25 @@ class _HomeScreenState extends State<HomeScreen> {
     if (passphrase == null || passphrase.length < 6) return;
 
     try {
-      final encryptedBackup = await SecureDataStore.instance.exportWithPassphrase(passphrase);
+      final encryptedBackup = await SecureDataStore.instance
+          .exportWithPassphrase(passphrase);
       final path = await FilePicker.saveFile(
         dialogTitle: strings.exportEncryptedBackup,
-        fileName: 'pathok_backup_${DateTime.now().millisecondsSinceEpoch}.backup',
+        fileName:
+            'pathok_backup_${DateTime.now().millisecondsSinceEpoch}.backup',
         bytes: utf8.encode(encryptedBackup),
       );
 
       if (mounted && path != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(strings.backupSaved)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(strings.backupSaved)));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${strings.error}: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('${strings.error}: $e')));
       }
     }
   }
@@ -306,15 +327,15 @@ class _HomeScreenState extends State<HomeScreen> {
       await _loadState();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(strings.backupRestored)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(strings.backupRestored)));
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(strings.invalidPassphrase)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(strings.invalidPassphrase)));
       }
     }
   }
@@ -401,9 +422,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (confirmed == true) {
       await _deleteAllData();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(strings.allDataDeleted)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(strings.allDataDeleted)));
       }
     }
   }
@@ -435,12 +456,15 @@ class _HomeScreenState extends State<HomeScreen> {
         onImportPdf: _pickPdf,
         onOpen: _openDocument,
         onDelete: _deleteDocument,
+        reminders: _reminders,
+        onToggleReminderTaken: _toggleReminderTaken,
       ),
       HistoryTab(
         documents: _documents,
         onOpen: _openDocument,
         onRename: _renameDocument,
         onDelete: _deleteDocument,
+        onTogglePin: _togglePinDocument,
       ),
       SettingsTab(
         reminders: _reminders,
@@ -459,7 +483,8 @@ class _HomeScreenState extends State<HomeScreen> {
       body: IndexedStack(index: _selectedIndex, children: pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+        onDestinationSelected: (index) =>
+            setState(() => _selectedIndex = index),
         destinations: [
           NavigationDestination(
             icon: const Icon(PathokIcons.home),

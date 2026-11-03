@@ -11,6 +11,7 @@ class HistoryTab extends StatefulWidget {
     required this.onOpen,
     required this.onRename,
     required this.onDelete,
+    this.onTogglePin,
     super.key,
   });
 
@@ -18,6 +19,7 @@ class HistoryTab extends StatefulWidget {
   final ValueChanged<LocalDocument> onOpen;
   final ValueChanged<LocalDocument> onRename;
   final ValueChanged<LocalDocument> onDelete;
+  final ValueChanged<LocalDocument>? onTogglePin;
 
   @override
   State<HistoryTab> createState() => _HistoryTabState();
@@ -25,7 +27,48 @@ class HistoryTab extends StatefulWidget {
 
 class _HistoryTabState extends State<HistoryTab> {
   String _query = '';
-  String _activeFilter = 'all'; // 'all', 'image', 'pdf'
+  String _activeFilter = 'all'; // 'all', 'prescription', 'bill', 'id_card', 'image', 'pdf'
+
+  Widget _buildCategoryBadge(String category, AppStrings strings) {
+    Color bg;
+    Color fg;
+    String label;
+
+    switch (category) {
+      case 'prescription':
+        bg = const Color(0xffecfdf5);
+        fg = const Color(0xff059669);
+        label = strings.categoryPrescriptions;
+        break;
+      case 'bill':
+        bg = const Color(0xfffffbeb);
+        fg = const Color(0xffd97706);
+        label = strings.categoryBills;
+        break;
+      case 'id_card':
+        bg = const Color(0xfff5f3ff);
+        fg = const Color(0xff7c3aed);
+        label = strings.categoryIdCards;
+        break;
+      default:
+        bg = const Color(0xfff1f5f9);
+        fg = const Color(0xff64748b);
+        label = strings.categoryGeneral;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: fg),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +78,9 @@ class _HistoryTabState extends State<HistoryTab> {
     final filtered = widget.documents.where((document) {
       if (_activeFilter == 'image' && document.fileType != 'image') return false;
       if (_activeFilter == 'pdf' && document.fileType != 'pdf') return false;
+      if (_activeFilter == 'prescription' && document.category != 'prescription') return false;
+      if (_activeFilter == 'bill' && document.category != 'bill') return false;
+      if (_activeFilter == 'id_card' && document.category != 'id_card') return false;
 
       final query = _query.trim().toLowerCase();
       if (query.isEmpty) return true;
@@ -122,7 +168,7 @@ class _HistoryTabState extends State<HistoryTab> {
                       ),
                       const SizedBox(height: 14),
 
-                      // Modern Filter Chips Row
+                      // Smart Filter Chips Row with Categories
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
@@ -133,6 +179,36 @@ class _HistoryTabState extends State<HistoryTab> {
                               onSelected: (_) {
                                 HapticFeedback.selectionClick();
                                 setState(() => _activeFilter = 'all');
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            FilterChip(
+                              selected: _activeFilter == 'prescription',
+                              avatar: const Icon(PathokIcons.pill, size: 14),
+                              label: Text(strings.categoryPrescriptions),
+                              onSelected: (_) {
+                                HapticFeedback.selectionClick();
+                                setState(() => _activeFilter = 'prescription');
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            FilterChip(
+                              selected: _activeFilter == 'bill',
+                              avatar: const Icon(Icons.receipt_long_outlined, size: 14),
+                              label: Text(strings.categoryBills),
+                              onSelected: (_) {
+                                HapticFeedback.selectionClick();
+                                setState(() => _activeFilter = 'bill');
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            FilterChip(
+                              selected: _activeFilter == 'id_card',
+                              avatar: const Icon(Icons.badge_outlined, size: 14),
+                              label: Text(strings.categoryIdCards),
+                              onSelected: (_) {
+                                HapticFeedback.selectionClick();
+                                setState(() => _activeFilter = 'id_card');
                               },
                             ),
                             const SizedBox(width: 8),
@@ -217,41 +293,69 @@ class _HistoryTabState extends State<HistoryTab> {
                               decoration: BoxDecoration(
                                 color: document.fileType == 'pdf'
                                     ? const Color(0xffffe4e6)
-                                    : theme.colorScheme.primary.withAlpha(25),
+                                    : (document.category == 'prescription'
+                                        ? const Color(0xffecfdf5)
+                                        : theme.colorScheme.primary.withAlpha(25)),
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               child: Icon(
                                 document.fileType == 'pdf'
                                     ? Icons.picture_as_pdf_outlined
-                                    : PathokIcons.fileText,
+                                    : (document.category == 'prescription'
+                                        ? PathokIcons.pill
+                                        : PathokIcons.fileText),
                                 color: document.fileType == 'pdf'
                                     ? const Color(0xffe11d48)
-                                    : theme.colorScheme.primary,
+                                    : (document.category == 'prescription'
+                                        ? const Color(0xff059669)
+                                        : theme.colorScheme.primary),
                                 size: 24,
                               ),
                             ),
-                            title: Text(
-                              document.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
-                              ),
+                            title: Row(
+                              children: [
+                                if (document.isPinned) ...[
+                                  const Icon(
+                                    Icons.push_pin_rounded,
+                                    size: 16,
+                                    color: Color(0xfff59e0b),
+                                  ),
+                                  const SizedBox(width: 4),
+                                ],
+                                Expanded(
+                                  child: Text(
+                                    document.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const SizedBox(height: 4),
-                                Text(
-                                  document.text.isEmpty
-                                      ? strings.emptyText
-                                      : document.text,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
+                                const SizedBox(height: 5),
+                                Row(
+                                  children: [
+                                    _buildCategoryBadge(document.category, strings),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        document.text.isEmpty
+                                            ? strings.emptyText
+                                            : document.text,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: theme.colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -260,10 +364,25 @@ class _HistoryTabState extends State<HistoryTab> {
                                 borderRadius: BorderRadius.circular(18),
                               ),
                               onSelected: (value) {
+                                if (value == 'pin') widget.onTogglePin?.call(document);
                                 if (value == 'rename') widget.onRename(document);
                                 if (value == 'delete') widget.onDelete(document);
                               },
                               itemBuilder: (context) => [
+                                PopupMenuItem(
+                                  value: 'pin',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        document.isPinned ? Icons.push_pin_outlined : Icons.push_pin,
+                                        size: 20,
+                                        color: const Color(0xfff59e0b),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(document.isPinned ? strings.unpinDocument : strings.pinDocument),
+                                    ],
+                                  ),
+                                ),
                                 PopupMenuItem(
                                   value: 'rename',
                                   child: Row(

@@ -78,6 +78,9 @@ class ImagePreprocessor {
         // Fix EXIF rotation from mobile cameras
         image = img.bakeOrientation(image);
 
+        // Auto-crop noisy border margins (deskew & edge trimming)
+        image = _autoCropDocument(image);
+
         // Optimal scaling for OCR:
         // Upscale small crops (< 1000px) so Bengali glyph diacritics are sharp
         if (image.width < 1000 && image.height < 1000) {
@@ -97,9 +100,8 @@ class ImagePreprocessor {
           }
         }
 
-        // Convert to grayscale and apply contrast normalization
-        image = img.grayscale(image);
-        image = img.adjustColor(image, contrast: 1.25, brightness: 1.03);
+        // Illumination normalization: lifts uneven room shadows and enhances faint Bangla diacritics
+        image = _normalizeShadowsAndEnhance(image);
 
         // Optimal quality (82): fast encoding, lightweight file, no degradation in OCR accuracy
         final encoded = img.encodeJpg(image, quality: 82);
@@ -194,5 +196,37 @@ class ImagePreprocessor {
     } catch (_) {
       return null;
     }
+  }
+
+  /// Trims outer borders and background margins for cleaner page edge alignment
+  static img.Image _autoCropDocument(img.Image image) {
+    if (image.width < 300 || image.height < 300) return image;
+
+    // Crop 1.5% outer edge to eliminate camera sensor black borders, fingers, or table shadows
+    final cropX = (image.width * 0.015).toInt();
+    final cropY = (image.height * 0.015).toInt();
+    final cropW = image.width - (cropX * 2);
+    final cropH = image.height - (cropY * 2);
+
+    if (cropW > 150 && cropH > 150) {
+      return img.copyCrop(image, x: cropX, y: cropY, width: cropW, height: cropH);
+    }
+    return image;
+  }
+
+  /// Normalizes illumination to eliminate room shadows across angled prescription photos
+  static img.Image _normalizeShadowsAndEnhance(img.Image image) {
+    var enhanced = img.grayscale(image);
+
+    // Adaptive illumination: Gamma 0.92 lifts dark corner shadows,
+    // Contrast 1.30 separates pencil/ballpen ink from yellowish paper
+    enhanced = img.adjustColor(
+      enhanced,
+      contrast: 1.30,
+      brightness: 1.05,
+      gamma: 0.92,
+    );
+
+    return enhanced;
   }
 }

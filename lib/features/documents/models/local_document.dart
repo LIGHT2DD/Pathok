@@ -8,6 +8,8 @@ class LocalDocument {
     this.thumbnailPath,
     required this.text,
     required this.fileType,
+    this.category = 'general',
+    this.isPinned = false,
     DateTime? createdAt,
     DateTime? updatedAt,
   })  : id = id ?? _generateId(),
@@ -20,6 +22,8 @@ class LocalDocument {
   final String? thumbnailPath;
   String text;
   final String fileType;
+  String category;
+  bool isPinned;
   final DateTime createdAt;
   DateTime updatedAt;
 
@@ -31,10 +35,43 @@ class LocalDocument {
     return values.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 
+  /// Automatically categorizes documents based on OCR text keywords and title
+  static String detectCategory(String text, String title) {
+    final lower = '$title $text'.toLowerCase();
+
+    // Prescription keywords
+    if (lower.contains(RegExp(
+      r'(?:rx|dr\.|doctor|patient|dosage|mg|ml|mcg|প্রেসক্রিপশন|ট্যাবলেট|ক্যাপসুল|সিরাপ|ড্রপ|ইনজেকশন|ডাক্তার|হাসপাতাল)',
+      caseSensitive: false,
+    ))) {
+      return 'prescription';
+    }
+
+    // Bill / Invoice keywords
+    if (lower.contains(RegExp(
+      r'(?:bill|invoice|receipt|vat|tax|total|amount|bdt|tk|টাকা|রসিদ|ভাউচার|বিল|বিদ্যুৎ|গ্যাস|মিটার|পরিশোধ)',
+      caseSensitive: false,
+    ))) {
+      return 'bill';
+    }
+
+    // Official Identity / Cards keywords
+    if (lower.contains(RegExp(
+      r'(?:nid|national id|identification|passport|birth|certificate|ভোটার|জাতীয় পরিচয়পত্র|পাসপোর্ট|জন্ম নিবন্ধন|স্মার্ট কার্ড)',
+      caseSensitive: false,
+    ))) {
+      return 'id_card';
+    }
+
+    return 'general';
+  }
+
   LocalDocument copyWith({
     String? title,
     String? text,
     String? thumbnailPath,
+    String? category,
+    bool? isPinned,
   }) {
     return LocalDocument(
       id: id,
@@ -43,6 +80,8 @@ class LocalDocument {
       thumbnailPath: thumbnailPath ?? this.thumbnailPath,
       text: text ?? this.text,
       fileType: fileType,
+      category: category ?? this.category,
+      isPinned: isPinned ?? this.isPinned,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
     );
@@ -55,6 +94,8 @@ class LocalDocument {
         if (thumbnailPath != null) 'thumbnailPath': thumbnailPath,
         'text': text,
         'fileType': fileType,
+        'category': category,
+        'isPinned': isPinned,
         'createdAt': createdAt.toIso8601String(),
         'updatedAt': updatedAt.toIso8601String(),
       };
@@ -66,6 +107,8 @@ class LocalDocument {
         thumbnailPath: json['thumbnailPath'] as String?,
         text: json['text'] as String? ?? '',
         fileType: json['fileType'] as String? ?? 'image',
+        category: json['category'] as String? ?? 'general',
+        isPinned: json['isPinned'] as bool? ?? false,
         createdAt: DateTime.tryParse(json['createdAt'] as String? ?? ''),
         updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? ''),
       );
