@@ -70,16 +70,16 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
-    - assets/branding/pathok_icon.png
+    - assets/logo.png
     - assets/tessdata_config.json
     - assets/tessdata/
 
 flutter_launcher_icons:
   android: true
   ios: false
-  image_path: assets/branding/pathok_icon.png
+  image_path: assets/logo.png
   adaptive_icon_background: "#081B5C"
-  adaptive_icon_foreground: assets/branding/pathok_icon.png
+  adaptive_icon_foreground: assets/logo.png
 
 dependency_overrides:
   flutter_tesseract_ocr:

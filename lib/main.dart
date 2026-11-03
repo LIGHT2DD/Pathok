@@ -66,6 +66,36 @@ class PathokIcons {
     fontFamily: _fontFamily,
     fontPackage: _fontPackage,
   );
+  static const arrowRight = IconData(
+    0xea1f,
+    fontFamily: _fontFamily,
+    fontPackage: _fontPackage,
+  );
+  static const fingerprint = IconData(
+    0xebd1,
+    fontFamily: _fontFamily,
+    fontPackage: _fontPackage,
+  );
+  static const lock = IconData(
+    0xeae2,
+    fontFamily: _fontFamily,
+    fontPackage: _fontPackage,
+  );
+  static const scan = IconData(
+    0xebc8,
+    fontFamily: _fontFamily,
+    fontPackage: _fontPackage,
+  );
+  static const pill = IconData(
+    0xec44,
+    fontFamily: _fontFamily,
+    fontPackage: _fontPackage,
+  );
+  static const stop = IconData(
+    0xed4a,
+    fontFamily: _fontFamily,
+    fontPackage: _fontPackage,
+  );
   static const language = IconData(
     0xebbe,
     fontFamily: _fontFamily,
@@ -252,7 +282,7 @@ class _BrandMark extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(size * .24),
         child: Image.asset(
-          'assets/branding/pathok_icon.png',
+          'assets/logo.png',
           width: size,
           height: size,
           fit: BoxFit.cover,
@@ -285,7 +315,7 @@ class LockScreen extends StatelessWidget {
               const SizedBox(height: 16),
               FilledButton.icon(
                 onPressed: onUnlock,
-                icon: const Icon(Icons.fingerprint),
+                icon: const Icon(PathokIcons.fingerprint),
                 label: const Text('আনলক করুন'),
               ),
             ],
@@ -356,7 +386,7 @@ class OnboardingScreen extends StatelessWidget {
               const Spacer(),
               FilledButton.icon(
                 onPressed: onComplete,
-                icon: const Icon(Icons.arrow_forward),
+                icon: const Icon(PathokIcons.arrowRight),
                 label: Padding(
                   padding: const EdgeInsets.all(12),
                   child: Text(
@@ -1283,7 +1313,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.document_scanner_outlined),
+                  : const Icon(PathokIcons.scan),
               label: Text(
                 _recognizing ? 'লেখা শনাক্ত হচ্ছে...' : 'অফলাইন OCR চালান',
               ),
@@ -1293,13 +1323,13 @@ class _DocumentScreenState extends State<DocumentScreen> {
             onPressed: _controller.text.trim().isEmpty
                 ? null
                 : _showPrescriptionCandidates,
-            icon: const Icon(Icons.medication_outlined),
+            icon: const Icon(PathokIcons.pill),
             label: const Text('প্রেসক্রিপশন সহায়তা'),
           ),
           const SizedBox(height: 8),
           FilledButton.icon(
             onPressed: _toggleSpeech,
-            icon: Icon(_speaking ? Icons.stop : Icons.volume_up),
+            icon: Icon(_speaking ? PathokIcons.stop : PathokIcons.volume),
             label: Text(_speaking ? 'থামুন' : 'লেখা শুনুন'),
           ),
         ],
@@ -1527,7 +1557,7 @@ class SettingsTab extends StatelessWidget {
                   onChanged: onLanguageChanged,
                 ),
                 SwitchListTile(
-                  secondary: const Icon(Icons.lock_outline),
+                  secondary: const Icon(PathokIcons.lock),
                   title: const Text('অ্যাপ লক'),
                   subtitle: const Text(
                     'ডিভাইসের biometrics বা PIN ব্যবহার করুন',
