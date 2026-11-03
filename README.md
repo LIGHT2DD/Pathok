@@ -72,8 +72,17 @@ Release artifacts are generated at:
 - `build/app/outputs/flutter-apk/app-release.apk`
 - `build/app/outputs/bundle/release/app-release.aab`
 
-The current release build uses the generated debug signing key. A production
-keystore and Play App Signing configuration must be supplied before publishing.
+Release tasks now fail when `android/key.properties` is missing instead of
+falling back to the debug signing key. A production keystore and Play App
+Signing configuration must be supplied before publishing.
+
+For a small ARM64 development APK, use:
+
+```powershell
+flutter build apk --debug --target-platform android-arm64 --split-per-abi
+```
+
+The resulting artifact is `build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk`.
 
 ## Architecture direction
 
@@ -114,5 +123,8 @@ removed from `shared_preferences`. App lock uses the device biometric or PIN
 through `local_auth`, and delete-all-data removes encrypted records, copied
 files, and scheduled notifications.
 
-The release build still uses the generated debug signing key. Configure a
-production keystore and Play App Signing before publishing.
+The app lock re-authenticates when a locked app returns from the background.
+Reminder notifications use generic text and private Android visibility so
+medicine names are not displayed on the lock screen. Release builds require a
+user-owned production signing key; configure a production keystore and Play
+App Signing before publishing.

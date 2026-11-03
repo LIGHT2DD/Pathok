@@ -39,8 +39,8 @@ class ReminderNotificationService {
 
     await _plugin.zonedSchedule(
       id: _notificationId(reminder),
-      title: 'পাঠক reminder',
-      body: reminder.medicineName,
+      title: 'Pathok reminder',
+      body: 'Medicine reminder',
       scheduledDate: scheduled,
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
@@ -49,6 +49,7 @@ class ReminderNotificationService {
           channelDescription: 'User-confirmed medicine reminder times',
           importance: Importance.high,
           priority: Priority.high,
+          visibility: NotificationVisibility.private,
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,

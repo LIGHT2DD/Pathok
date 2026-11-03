@@ -217,27 +217,58 @@ class AppRoot extends StatefulWidget {
   State<AppRoot> createState() => _AppRootState();
 }
 
-class _AppRootState extends State<AppRoot> {
+class _AppRootState extends State<AppRoot> with WidgetsBindingObserver {
   bool? _onboardingComplete;
   bool _locked = false;
   bool _english = false;
+  bool _authenticating = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadPreference();
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _lockOnBackground();
+    } else if (state == AppLifecycleState.resumed && _locked) {
+      _loadPreference();
+    }
+  }
+
+  Future<void> _lockOnBackground() async {
+    final preferences = await SharedPreferences.getInstance();
+    if (preferences.getBool('app_lock_enabled') == true && mounted) {
+      setState(() => _locked = true);
+    }
+  }
+
   Future<void> _loadPreference() async {
+    if (_authenticating) return;
     final preferences = await SharedPreferences.getInstance();
     final lockEnabled = preferences.getBool('app_lock_enabled') ?? false;
     var locked = false;
     if (lockEnabled) {
-      locked = !(await LocalAuthentication().authenticate(
-        localizedReason: 'পাঠকের স্থানীয় নথি খুলতে পরিচয় যাচাই করুন',
-        biometricOnly: false,
-        persistAcrossBackgrounding: true,
-      ));
+      _authenticating = true;
+      try {
+        locked = !(await LocalAuthentication().authenticate(
+          localizedReason: 'পাঠকের স্থানীয় নথি খুলতে পরিচয় যাচাই করুন',
+          biometricOnly: false,
+          persistAcrossBackgrounding: true,
+        ));
+      } finally {
+        _authenticating = false;
+      }
     }
     if (mounted) {
       setState(() {

@@ -58,6 +58,20 @@ android {
     }
 }
 
+if (!signingPropertiesFile.exists()) {
+    tasks.configureEach {
+        if (name.endsWith("Release")) {
+            doFirst {
+                throw GradleException(
+                    "Production release signing is required. " +
+                        "Copy android/key.properties.example to android/key.properties " +
+                        "and configure a user-owned release keystore.",
+                )
+            }
+        }
+    }
+}
+
 kotlin {
     compilerOptions {
         jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
