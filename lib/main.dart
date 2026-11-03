@@ -299,6 +299,7 @@ class LockScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final english = _PathokLocale.of(context);
     return Scaffold(
       body: Center(
         child: Padding(
@@ -309,14 +310,14 @@ class LockScreen extends StatelessWidget {
               const _BrandMark(size: 88),
               const SizedBox(height: 16),
               Text(
-                'পাঠক লক করা আছে',
+                english ? 'Pathok is locked' : 'পাঠক লক করা আছে',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 16),
               FilledButton.icon(
                 onPressed: onUnlock,
                 icon: const Icon(PathokIcons.fingerprint),
-                label: const Text('আনলক করুন'),
+                label: Text(english ? 'Unlock' : 'আনলক করুন'),
               ),
             ],
           ),
@@ -337,19 +338,34 @@ class OnboardingScreen extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Spacer(),
-              const _BrandMark(size: 104),
-              const SizedBox(height: 20),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  children: [
+                    const _BrandMark(size: 56),
+                    const SizedBox(width: 14),
+                    Text(
+                      english ? 'Pathok' : 'পাঠক',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 40),
               Semantics(
                 header: true,
                 child: Text(
-                  'পাঠক',
+                  english ? 'Read documents with ease' : 'সহজে নথি পড়ুন',
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                     color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.bold,
                   ),
@@ -357,33 +373,44 @@ class OnboardingScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Every document has a voice.',
+                english
+                    ? 'Every document has a voice.'
+                    : 'প্রতিটি নথির একটি কণ্ঠ আছে।',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-              const SizedBox(height: 28),
-              Icon(
-                PathokIcons.volume,
-                size: 72,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(height: 32),
-              Text(
-                english
-                    ? 'Read and listen to text from images or documents.'
-                    : 'ছবি বা নথি থেকে লেখা পড়ুন এবং শুনুন।',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 22),
+              const SizedBox(height: 36),
+              _OnboardingBenefit(
+                icon: PathokIcons.scan,
+                text: english
+                    ? 'Scan images and read Bangla or English text'
+                    : 'ছবি স্ক্যান করে বাংলা বা English লেখা পড়ুন',
               ),
               const SizedBox(height: 12),
-              Text(
-                english
-                    ? 'Pathok keeps your documents safely on this device. Press below to begin.'
-                    : 'পাঠক আপনার নথি এই ডিভাইসেই নিরাপদে রাখে। শুরু করতে নিচের বোতামটি চাপুন।',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 17),
+              _OnboardingBenefit(
+                icon: PathokIcons.volume,
+                text: english
+                    ? 'Listen to recognized text offline'
+                    : 'Offline-এ শনাক্ত লেখা শুনুন',
+              ),
+              const SizedBox(height: 12),
+              _OnboardingBenefit(
+                icon: PathokIcons.lock,
+                text: english
+                    ? 'Keep your documents private on this device'
+                    : 'নথি এই ডিভাইসেই ব্যক্তিগত রাখুন',
               ),
               const Spacer(),
+              Text(
+                english
+                    ? 'No account or internet connection is required.'
+                    : 'কোনো account বা internet connection প্রয়োজন নেই।',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 14),
               FilledButton.icon(
                 onPressed: onComplete,
                 icon: const Icon(PathokIcons.arrowRight),
@@ -398,6 +425,26 @@ class OnboardingScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _OnboardingBenefit extends StatelessWidget {
+  const _OnboardingBenefit({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          child: Icon(icon, color: Theme.of(context).colorScheme.primary),
+        ),
+        title: Text(text),
       ),
     );
   }
@@ -528,6 +575,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
+    final english = _PathokLocale.of(context);
     final file = await ImagePicker().pickImage(
       source: source,
       maxWidth: 2400,
@@ -537,7 +585,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted || file == null) return;
     final storedPath = await _copyToAppStorage(file.path);
     final document = LocalDocument(
-      title: 'নতুন নথি ${_documents.length + 1}',
+      title: english
+          ? 'New document ${_documents.length + 1}'
+          : 'নতুন নথি ${_documents.length + 1}',
       sourcePath: storedPath,
       text: '',
       fileType: 'image',
@@ -548,6 +598,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _pickPdf() async {
+    final english = _PathokLocale.of(context);
     final files = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
@@ -555,7 +606,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted || files.isEmpty || files.first.path == null) return;
     final storedPath = await _copyToAppStorage(files.first.path!);
     final document = LocalDocument(
-      title: 'PDF নথি ${_documents.length + 1}',
+      title: english
+          ? 'PDF document ${_documents.length + 1}'
+          : 'PDF নথি ${_documents.length + 1}',
       sourcePath: storedPath,
       text: '',
       fileType: 'pdf',
@@ -657,6 +710,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _exportBackup() async {
+    final english = _PathokLocale.of(context);
     try {
       final encoded = await SecureDataStore.instance.exportEncryptedPayload();
       final path = await FilePicker.saveFile(
@@ -666,19 +720,32 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       if (mounted && path != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Encrypted backup সংরক্ষণ হয়েছে।')),
+          SnackBar(
+            content: Text(
+              english
+                  ? 'Encrypted backup saved.'
+                  : 'Encrypted backup সংরক্ষণ হয়েছে。',
+            ),
+          ),
         );
       }
     } on Exception catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Backup সংরক্ষণ ব্যর্থ হয়েছে: $error')),
+          SnackBar(
+            content: Text(
+              english
+                  ? 'Backup could not be saved.'
+                  : 'Backup সংরক্ষণ ব্যর্থ হয়েছে: $error',
+            ),
+          ),
         );
       }
     }
   }
 
   Future<void> _importBackup() async {
+    final english = _PathokLocale.of(context);
     final files = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['txt', 'backup'],
@@ -690,39 +757,52 @@ class _HomeScreenState extends State<HomeScreen> {
       await SecureDataStore.instance.importEncryptedPayload(content);
       await _loadDocuments();
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Backup restore হয়েছে।')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              english ? 'Backup restored.' : 'Backup restore হয়েছে।',
+            ),
+          ),
+        );
       }
     } on Exception catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Backup restore ব্যর্থ হয়েছে: $error')),
+          SnackBar(
+            content: Text(
+              english
+                  ? 'Backup could not be restored.'
+                  : 'Backup restore ব্যর্থ হয়েছে: $error',
+            ),
+          ),
         );
       }
     }
   }
 
   Future<void> _renameDocument(LocalDocument document) async {
+    final english = _PathokLocale.of(context);
     final controller = TextEditingController(text: document.title);
     final title = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('নথির নাম পরিবর্তন করুন'),
+        title: Text(english ? 'Rename document' : 'নথির নাম পরিবর্তন করুন'),
         content: TextField(
           controller: controller,
           autofocus: true,
           textInputAction: TextInputAction.done,
-          decoration: const InputDecoration(labelText: 'নথির নাম'),
+          decoration: InputDecoration(
+            labelText: english ? 'Document name' : 'নথির নাম',
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('বাতিল'),
+            child: Text(english ? 'Cancel' : 'বাতিল'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('সংরক্ষণ'),
+            child: Text(english ? 'Save' : 'সংরক্ষণ'),
           ),
         ],
       ),
@@ -734,19 +814,24 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _deleteDocument(LocalDocument document) async {
+    final english = _PathokLocale.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('নথি মুছবেন?'),
-        content: Text('“${document.title}” স্থায়ীভাবে মুছে যাবে।'),
+        title: Text(english ? 'Delete document?' : 'নথি মুছবেন?'),
+        content: Text(
+          english
+              ? '"${document.title}" will be permanently deleted.'
+              : '“${document.title}” স্থায়ীভাবে মুছে যাবে।',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('বাতিল'),
+            child: Text(english ? 'Cancel' : 'বাতিল'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('মুছুন'),
+            child: Text(english ? 'Delete' : 'মুছুন'),
           ),
         ],
       ),
@@ -759,21 +844,24 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _confirmDeleteAllData() async {
+    final english = _PathokLocale.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('সব তথ্য মুছবেন?'),
-        content: const Text(
-          'সংরক্ষিত নথি, কপি করা ফাইল এবং medicine reminder স্থায়ীভাবে মুছে যাবে।',
+        title: Text(english ? 'Delete all data?' : 'সব তথ্য মুছবেন?'),
+        content: Text(
+          english
+              ? 'Saved documents, copied files, and medicine reminders will be permanently deleted.'
+              : 'সংরক্ষিত নথি, কপি করা ফাইল এবং medicine reminder স্থায়ীভাবে মুছে যাবে।',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('বাতিল'),
+            child: Text(english ? 'Cancel' : 'বাতিল'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('স্থায়ীভাবে মুছুন'),
+            child: Text(english ? 'Delete permanently' : 'স্থায়ীভাবে মুছুন'),
           ),
         ],
       ),
@@ -782,7 +870,13 @@ class _HomeScreenState extends State<HomeScreen> {
       await _deleteAllData();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('সব স্থানীয় তথ্য মুছে ফেলা হয়েছে।')),
+          SnackBar(
+            content: Text(
+              english
+                  ? 'All local data was deleted.'
+                  : 'সব স্থানীয় তথ্য মুছে ফেলা হয়েছে।',
+            ),
+          ),
         );
       }
     }
@@ -836,35 +930,7 @@ class _HomeTab extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 24),
-          Card(
-            color: Theme.of(context).colorScheme.primary,
-            child: Padding(
-              padding: const EdgeInsets.all(22),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.auto_stories_outlined,
-                    color: Colors.white,
-                    size: 38,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      english
-                          ? 'Read, listen to, and securely save documents'
-                          : 'নথি পড়ুন, শুনুন এবং নিরাপদে সংরক্ষণ করুন',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 28),
           Text(
             english ? 'Add a new document' : 'নতুন নথি যোগ করুন',
             style: Theme.of(context).textTheme.titleLarge,
@@ -1092,19 +1158,29 @@ class _DocumentScreenState extends State<DocumentScreen> {
       widget.document.text = text;
       widget.onChanged();
       if (mounted) {
+        final english = _PathokLocale.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'ছবির লেখা শনাক্ত হয়েছে। Confidence: ${result.confidenceLabel}',
+              english
+                  ? 'Text recognized. Confidence: ${result.confidenceLabel}'
+                  : 'ছবির লেখা শনাক্ত হয়েছে। Confidence: ${result.confidenceLabel}',
             ),
           ),
         );
       }
     } on Exception catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('OCR ব্যর্থ হয়েছে: $error')));
+        final english = _PathokLocale.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              english
+                  ? 'OCR failed. Please try again.'
+                  : 'OCR ব্যর্থ হয়েছে: $error',
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _recognizing = false);
@@ -1112,6 +1188,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
   }
 
   Future<void> _toggleSpeech() async {
+    final english = _PathokLocale.of(context);
     if (_speaking) {
       await _tts.stop();
       if (mounted) setState(() => _speaking = false);
@@ -1121,7 +1198,13 @@ class _DocumentScreenState extends State<DocumentScreen> {
     if (_controller.text.trim().isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('শোনার জন্য আগে লেখাটি যোগ করুন।')),
+          SnackBar(
+            content: Text(
+              english
+                  ? 'Add text before starting playback.'
+                  : 'শোনার জন্য আগে লেখাটি যোগ করুন।',
+            ),
+          ),
         );
       }
       return;
@@ -1133,24 +1216,33 @@ class _DocumentScreenState extends State<DocumentScreen> {
   }
 
   Future<void> _showPrescriptionCandidates() async {
+    final english = _PathokLocale.of(context);
     final candidates = _prescriptionService.extract(_controller.text);
     if (!mounted) return;
     if (candidates.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('সম্ভাব্য ওষুধের লাইন পাওয়া যায়নি।')),
+        SnackBar(
+          content: Text(
+            english
+                ? 'No possible medicine lines were found.'
+                : 'সম্ভাব্য ওষুধের লাইন পাওয়া যায়নি।',
+          ),
+        ),
       );
       return;
     }
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('সম্ভাব্য ওষুধ'),
+        title: Text(english ? 'Possible medicines' : 'সম্ভাব্য ওষুধ'),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'এটি কেবল লেখা থেকে পাওয়া সম্ভাব্য লাইন। চিকিৎসার পরামর্শ নয়। সংরক্ষণ বা reminder করার আগে যাচাই করুন।',
+              Text(
+                english
+                    ? 'These are possible lines found in the text, not medical advice. Verify them before saving a reminder.'
+                    : 'এটি কেবল লেখা থেকে পাওয়া সম্ভাব্য লাইন। চিকিৎসার পরামর্শ নয়। সংরক্ষণ বা reminder করার আগে যাচাই করুন।',
               ),
               const SizedBox(height: 12),
               ...candidates.map(
@@ -1165,11 +1257,11 @@ class _DocumentScreenState extends State<DocumentScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('বাতিল'),
+            child: Text(english ? 'Cancel' : 'বাতিল'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('আমি যাচাই করেছি'),
+            child: Text(english ? 'I have verified this' : 'আমি যাচাই করেছি'),
           ),
         ],
       ),
@@ -1181,7 +1273,9 @@ class _DocumentScreenState extends State<DocumentScreen> {
         final time = await showTimePicker(
           context: context,
           initialTime: const TimeOfDay(hour: 9, minute: 0),
-          helpText: '${candidate.name} - সময় বেছে নিন',
+          helpText: english
+              ? '${candidate.name} - choose a time'
+              : '${candidate.name} - সময় বেছে নিন',
         );
         if (!mounted || time == null) continue;
         final reminder = MedicineReminder(
@@ -1201,8 +1295,12 @@ class _DocumentScreenState extends State<DocumentScreen> {
           SnackBar(
             content: Text(
               savedCount == 0
-                  ? 'কোনো reminder সংরক্ষণ করা হয়নি।'
-                  : '$savedCountটি reminder সংরক্ষণ হয়েছে।',
+                  ? (english
+                        ? 'No reminders were saved.'
+                        : 'কোনো reminder সংরক্ষণ করা হয়নি।')
+                  : (english
+                        ? '$savedCount reminder(s) saved.'
+                        : '$savedCountটি reminder সংরক্ষণ হয়েছে।'),
             ),
           ),
         );
@@ -1212,6 +1310,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final english = _PathokLocale.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -1221,12 +1320,12 @@ class _DocumentScreenState extends State<DocumentScreen> {
         ),
         actions: [
           IconButton(
-            tooltip: 'PDF হিসেবে রপ্তানি',
+            tooltip: english ? 'Export as PDF' : 'PDF হিসেবে রপ্তানি',
             onPressed: () => widget.onExport(widget.document),
             icon: const Icon(Icons.picture_as_pdf),
           ),
           IconButton(
-            tooltip: 'লেখা শেয়ার করুন',
+            tooltip: english ? 'Share text' : 'লেখা শেয়ার করুন',
             onPressed: _shareText,
             icon: const Icon(Icons.share_outlined),
           ),
@@ -1253,33 +1352,45 @@ class _DocumentScreenState extends State<DocumentScreen> {
                   Icons.picture_as_pdf_outlined,
                   color: Theme.of(context).colorScheme.primary,
                 ),
-                title: const Text('PDF নথি আমদানি হয়েছে'),
-                subtitle: const Text(
-                  'PDF-এর লেখা OCR ধাপে প্রক্রিয়া করা হবে।',
+                title: Text(english ? 'PDF imported' : 'PDF নথি আমদানি হয়েছে'),
+                subtitle: Text(
+                  english
+                      ? 'PDF text will be processed during the OCR step.'
+                      : 'PDF-এর লেখা OCR ধাপে প্রক্রিয়া করা হবে।',
                 ),
               ),
             ),
           const SizedBox(height: 16),
           Text(
-            'স্বীকৃত লেখা',
+            english ? 'Recognized text' : 'স্বীকৃত লেখা',
             style: Theme.of(
               context,
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
           Text(
-            'ছবির লেখা ডিভাইসেই শনাক্ত করুন। ফলাফল অবশ্যই যাচাই করে সম্পাদনা করুন।',
+            english
+                ? 'Recognize text on this device. Review and edit the result.'
+                : 'ছবির লেখা ডিভাইসেই শনাক্ত করুন। ফলাফল অবশ্যই যাচাই করে সম্পাদনা করুন।',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           Card(
             color: Theme.of(context).colorScheme.secondaryContainer,
-            child: const ListTile(
+            child: ListTile(
               contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               leading: Icon(Icons.offline_bolt_outlined),
-              title: Text('Offline বাংলা + English OCR'),
-              subtitle: Text('ছবি পরিষ্কার ও সোজা রাখলে ফলাফল ভালো হবে।'),
+              title: Text(
+                english
+                    ? 'Offline Bangla + English OCR'
+                    : 'Offline বাংলা + English OCR',
+              ),
+              subtitle: Text(
+                english
+                    ? 'Clear, straight images produce better results.'
+                    : 'ছবি পরিষ্কার ও সোজা রাখলে ফলাফল ভালো হবে।',
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -1295,8 +1406,10 @@ class _DocumentScreenState extends State<DocumentScreen> {
                   widget.onChanged();
                   setState(() {});
                 },
-                decoration: const InputDecoration(
-                  hintText: 'এখানে নথির লেখা লিখুন...',
+                decoration: InputDecoration(
+                  hintText: english
+                      ? 'Enter document text here...'
+                      : 'এখানে নথির লেখা লিখুন...',
                   border: InputBorder.none,
                   filled: false,
                 ),
@@ -1315,7 +1428,9 @@ class _DocumentScreenState extends State<DocumentScreen> {
                     )
                   : const Icon(PathokIcons.scan),
               label: Text(
-                _recognizing ? 'লেখা শনাক্ত হচ্ছে...' : 'অফলাইন OCR চালান',
+                _recognizing
+                    ? (english ? 'Recognizing text...' : 'লেখা শনাক্ত হচ্ছে...')
+                    : (english ? 'Run offline OCR' : 'অফলাইন OCR চালান'),
               ),
             ),
           const SizedBox(height: 8),
@@ -1324,13 +1439,19 @@ class _DocumentScreenState extends State<DocumentScreen> {
                 ? null
                 : _showPrescriptionCandidates,
             icon: const Icon(PathokIcons.pill),
-            label: const Text('প্রেসক্রিপশন সহায়তা'),
+            label: Text(
+              english ? 'Prescription assistance' : 'প্রেসক্রিপশন সহায়তা',
+            ),
           ),
           const SizedBox(height: 8),
           FilledButton.icon(
             onPressed: _toggleSpeech,
             icon: Icon(_speaking ? PathokIcons.stop : PathokIcons.volume),
-            label: Text(_speaking ? 'থামুন' : 'লেখা শুনুন'),
+            label: Text(
+              _speaking
+                  ? (english ? 'Stop' : 'থামুন')
+                  : (english ? 'Listen to text' : 'লেখা শুনুন'),
+            ),
           ),
         ],
       ),
@@ -1338,10 +1459,17 @@ class _DocumentScreenState extends State<DocumentScreen> {
   }
 
   Future<void> _shareText() async {
+    final english = _PathokLocale.of(context);
     final text = _controller.text.trim();
     if (text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('শেয়ার করার মতো লেখা নেই।')),
+        SnackBar(
+          content: Text(
+            english
+                ? 'There is no text to share.'
+                : 'শেয়ার করার মতো লেখা নেই।',
+          ),
+        ),
       );
       return;
     }
@@ -1558,9 +1686,11 @@ class SettingsTab extends StatelessWidget {
                 ),
                 SwitchListTile(
                   secondary: const Icon(PathokIcons.lock),
-                  title: const Text('অ্যাপ লক'),
-                  subtitle: const Text(
-                    'ডিভাইসের biometrics বা PIN ব্যবহার করুন',
+                  title: Text(english ? 'App lock' : 'অ্যাপ লক'),
+                  subtitle: Text(
+                    english
+                        ? 'Use device biometrics or PIN'
+                        : 'ডিভাইসের biometrics বা PIN ব্যবহার করুন',
                   ),
                   value: lockEnabled,
                   onChanged: onLockChanged,
@@ -1569,12 +1699,19 @@ class SettingsTab extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Text('রিমাইন্ডার', style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            english ? 'Reminders' : 'রিমাইন্ডার',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
           if (reminders.isEmpty)
             Card(
-              child: const Padding(
-                padding: EdgeInsets.all(18),
-                child: Text('এখনও কোনো reminder সংরক্ষণ করা হয়নি।'),
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Text(
+                  english
+                      ? 'No reminders saved yet.'
+                      : 'এখনও কোনো reminder সংরক্ষণ করা হয়নি।',
+                ),
               ),
             )
           else
@@ -1586,10 +1723,12 @@ class SettingsTab extends StatelessWidget {
                     leading: const Icon(PathokIcons.alarm),
                     title: Text(reminder.medicineName),
                     subtitle: Text(
-                      '${reminder.hour.toString().padLeft(2, '0')}:${reminder.minute.toString().padLeft(2, '0')} • ব্যবহার যাচাই করুন',
+                      english
+                          ? '${reminder.hour.toString().padLeft(2, '0')}:${reminder.minute.toString().padLeft(2, '0')} • Verify instructions'
+                          : '${reminder.hour.toString().padLeft(2, '0')}:${reminder.minute.toString().padLeft(2, '0')} • ব্যবহার যাচাই করুন',
                     ),
                     trailing: IconButton(
-                      tooltip: 'Reminder মুছুন',
+                      tooltip: english ? 'Delete reminder' : 'Reminder মুছুন',
                       icon: const Icon(PathokIcons.trash),
                       onPressed: () => onDeleteReminder(reminder),
                     ),
@@ -1602,32 +1741,54 @@ class SettingsTab extends StatelessWidget {
           Card(
             child: Column(
               children: [
-                const ListTile(
-                  leading: Icon(PathokIcons.wifi),
-                  title: Text('অফলাইন মোড'),
-                  subtitle: Text('মূল কাজগুলো ইন্টারনেট ছাড়াই চলবে'),
+                ListTile(
+                  leading: const Icon(PathokIcons.wifi),
+                  title: Text(english ? 'Offline mode' : 'অফলাইন মোড'),
+                  subtitle: Text(
+                    english
+                        ? 'Core tasks work without internet'
+                        : 'মূল কাজগুলো ইন্টারনেট ছাড়াই চলবে',
+                  ),
                 ),
-                const ListTile(
-                  leading: Icon(PathokIcons.accessible),
-                  title: Text('অ্যাক্সেসিবিলিটি'),
-                  subtitle: Text('TalkBack এবং বড় লেখা সমর্থিত'),
+                ListTile(
+                  leading: const Icon(PathokIcons.accessible),
+                  title: Text(english ? 'Accessibility' : 'অ্যাক্সেসিবিলিটি'),
+                  subtitle: Text(
+                    english
+                        ? 'TalkBack and large text are supported'
+                        : 'TalkBack এবং বড় লেখা সমর্থিত',
+                  ),
                 ),
                 ListTile(
                   leading: const Icon(PathokIcons.trash),
-                  title: const Text('সব স্থানীয় তথ্য মুছুন'),
+                  title: Text(
+                    english
+                        ? 'Delete all local data'
+                        : 'সব স্থানীয় তথ্য মুছুন',
+                  ),
                   onTap: onDeleteAllData,
                 ),
                 ListTile(
                   leading: const Icon(Icons.upload_file_outlined),
-                  title: const Text('Encrypted backup export'),
-                  subtitle: const Text('নথির তথ্য একটি encrypted ফাইলে রাখুন'),
+                  title: Text(
+                    english
+                        ? 'Export encrypted backup'
+                        : 'Encrypted backup export',
+                  ),
+                  subtitle: Text(
+                    english
+                        ? 'Save document data to an encrypted file'
+                        : 'নথির তথ্য একটি encrypted ফাইলে রাখুন',
+                  ),
                   onTap: onExportBackup,
                 ),
                 ListTile(
                   leading: const Icon(Icons.download_outlined),
-                  title: const Text('Backup restore'),
-                  subtitle: const Text(
-                    'আগের Pathok backup থেকে তথ্য ফিরিয়ে আনুন',
+                  title: Text(english ? 'Restore backup' : 'Backup restore'),
+                  subtitle: Text(
+                    english
+                        ? 'Restore data from a previous Pathok backup'
+                        : 'আগের Pathok backup থেকে তথ্য ফিরিয়ে আনুন',
                   ),
                   onTap: onImportBackup,
                 ),

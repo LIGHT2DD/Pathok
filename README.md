@@ -9,6 +9,10 @@ The initial Flutter foundation includes:
 
 - Bangla-first Material 3 onboarding and navigation.
 - Persisted Bangla/English UI language switch in Settings.
+- Localized onboarding, document, reminder, backup, and settings surfaces for
+  the selected language.
+- Compact task-first onboarding and home layout without a promotional hero
+  banner.
 - Camera capture and gallery image import through the native Android picker.
 - App-private persistent document metadata and source-file copies.
 - PDF import and text PDF export.
