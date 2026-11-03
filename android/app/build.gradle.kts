@@ -40,6 +40,8 @@ android {
 
     buildTypes {
         release {
+            isMinifyEnabled = true
+            isShrinkResources = true
             signingConfig = if (signingPropertiesFile.exists()) {
                 signingConfigs.create("releaseKey").apply {
                     storeFile = file(signingProperties["storeFile"] as String)
