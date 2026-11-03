@@ -20,20 +20,76 @@ class PathokIcons {
 
   static const _fontFamily = 'TablerIcons';
   static const _fontPackage = 'tabler_icons';
-  static const home = IconData(0xeac1, fontFamily: _fontFamily, fontPackage: _fontPackage);
-  static const history = IconData(0xebea, fontFamily: _fontFamily, fontPackage: _fontPackage);
-  static const settings = IconData(0xeb20, fontFamily: _fontFamily, fontPackage: _fontPackage);
-  static const volume = IconData(0xeb50, fontFamily: _fontFamily, fontPackage: _fontPackage);
-  static const camera = IconData(0xea54, fontFamily: _fontFamily, fontPackage: _fontPackage);
-  static const fileInvoice = IconData(0xeb67, fontFamily: _fontFamily, fontPackage: _fontPackage);
-  static const photo = IconData(0xeb0a, fontFamily: _fontFamily, fontPackage: _fontPackage);
-  static const fileText = IconData(0xeaa2, fontFamily: _fontFamily, fontPackage: _fontPackage);
-  static const chevronRight = IconData(0xea61, fontFamily: _fontFamily, fontPackage: _fontPackage);
-  static const language = IconData(0xebbe, fontFamily: _fontFamily, fontPackage: _fontPackage);
-  static const alarm = IconData(0xea04, fontFamily: _fontFamily, fontPackage: _fontPackage);
-  static const trash = IconData(0xeb41, fontFamily: _fontFamily, fontPackage: _fontPackage);
-  static const wifi = IconData(0xeb52, fontFamily: _fontFamily, fontPackage: _fontPackage);
-  static const accessible = IconData(0xeba9, fontFamily: _fontFamily, fontPackage: _fontPackage);
+  static const home = IconData(
+    0xeac1,
+    fontFamily: _fontFamily,
+    fontPackage: _fontPackage,
+  );
+  static const history = IconData(
+    0xebea,
+    fontFamily: _fontFamily,
+    fontPackage: _fontPackage,
+  );
+  static const settings = IconData(
+    0xeb20,
+    fontFamily: _fontFamily,
+    fontPackage: _fontPackage,
+  );
+  static const volume = IconData(
+    0xeb50,
+    fontFamily: _fontFamily,
+    fontPackage: _fontPackage,
+  );
+  static const camera = IconData(
+    0xea54,
+    fontFamily: _fontFamily,
+    fontPackage: _fontPackage,
+  );
+  static const fileInvoice = IconData(
+    0xeb67,
+    fontFamily: _fontFamily,
+    fontPackage: _fontPackage,
+  );
+  static const photo = IconData(
+    0xeb0a,
+    fontFamily: _fontFamily,
+    fontPackage: _fontPackage,
+  );
+  static const fileText = IconData(
+    0xeaa2,
+    fontFamily: _fontFamily,
+    fontPackage: _fontPackage,
+  );
+  static const chevronRight = IconData(
+    0xea61,
+    fontFamily: _fontFamily,
+    fontPackage: _fontPackage,
+  );
+  static const language = IconData(
+    0xebbe,
+    fontFamily: _fontFamily,
+    fontPackage: _fontPackage,
+  );
+  static const alarm = IconData(
+    0xea04,
+    fontFamily: _fontFamily,
+    fontPackage: _fontPackage,
+  );
+  static const trash = IconData(
+    0xeb41,
+    fontFamily: _fontFamily,
+    fontPackage: _fontPackage,
+  );
+  static const wifi = IconData(
+    0xeb52,
+    fontFamily: _fontFamily,
+    fontPackage: _fontPackage,
+  );
+  static const accessible = IconData(
+    0xeba9,
+    fontFamily: _fontFamily,
+    fontPackage: _fontPackage,
+  );
 }
 
 Future<void> main() async {
@@ -47,15 +103,55 @@ class PathokApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const teal = Color(0xff00695c);
+    const navy = Color(0xff173b70);
+    const mint = Color(0xff2b8a78);
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: navy,
+      primary: navy,
+      secondary: mint,
+      brightness: Brightness.light,
+    );
     return MaterialApp(
       title: 'পাঠক',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: teal),
+        colorScheme: colorScheme,
         useMaterial3: true,
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(),
+        scaffoldBackgroundColor: const Color(0xfff6f8fc),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xfff6f8fc),
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+        ),
+        cardTheme: CardThemeData(
+          elevation: 0,
+          margin: EdgeInsets.zero,
+          color: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: Color(0xffe6ebf2)),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xffd9e1ec)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xffd9e1ec)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: colorScheme.primary, width: 2),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: 16,
+          ),
         ),
       ),
       home: const AppRoot(),
@@ -120,7 +216,29 @@ class _AppRootState extends State<AppRoot> {
         ? const HomeScreen()
         : OnboardingScreen(onComplete: _completeOnboarding);
   }
+}
 
+class _BrandMark extends StatelessWidget {
+  const _BrandMark({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'পাঠক',
+      image: true,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(size * .24),
+        child: Image.asset(
+          'assets/branding/pathok_icon.png',
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
 }
 
 class LockScreen extends StatelessWidget {
@@ -137,9 +255,12 @@ class LockScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.lock_outline, size: 72),
+              const _BrandMark(size: 88),
               const SizedBox(height: 16),
-              const Text('পাঠক লক করা আছে', style: TextStyle(fontSize: 22)),
+              Text(
+                'পাঠক লক করা আছে',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
               const SizedBox(height: 16),
               FilledButton.icon(
                 onPressed: onUnlock,
@@ -169,15 +290,17 @@ class OnboardingScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Spacer(),
+              const _BrandMark(size: 104),
+              const SizedBox(height: 20),
               Semantics(
                 header: true,
                 child: Text(
                   'পাঠক',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -186,8 +309,12 @@ class OnboardingScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-              const SizedBox(height: 32),
-              const Icon(PathokIcons.volume, size: 96),
+              const SizedBox(height: 28),
+              Icon(
+                PathokIcons.volume,
+                size: 72,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               const SizedBox(height: 32),
               const Text(
                 'ছবি বা নথি থেকে লেখা পড়ুন এবং শুনুন।',
@@ -241,15 +368,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadDocuments() async {
     final payload = await SecureDataStore.instance.read();
     final preferences = await SharedPreferences.getInstance();
-    final values = (payload['documents'] as List<dynamic>? ?? <dynamic>[])
-        .map((value) => value as String);
+    final values = (payload['documents'] as List<dynamic>? ?? <dynamic>[]).map(
+      (value) => value as String,
+    );
     _documents
       ..clear()
       ..addAll(
         values.map(
-          (value) => LocalDocument.fromJson(
-            jsonDecode(value) as Map<String, dynamic>,
-          ),
+          (value) =>
+              LocalDocument.fromJson(jsonDecode(value) as Map<String, dynamic>),
         ),
       );
     _reminders
@@ -265,8 +392,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _saveDocuments() async {
     final payload = await SecureDataStore.instance.read();
-    payload['documents'] =
-        _documents.map((document) => jsonEncode(document.toJson())).toList();
+    payload['documents'] = _documents
+        .map((document) => jsonEncode(document.toJson()))
+        .toList();
     await SecureDataStore.instance.write(payload);
   }
 
@@ -308,7 +436,8 @@ class _HomeScreenState extends State<HomeScreen> {
       body: IndexedStack(index: _selectedIndex, children: pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+        onDestinationSelected: (index) =>
+            setState(() => _selectedIndex = index),
         destinations: const [
           NavigationDestination(icon: Icon(PathokIcons.home), label: 'হোম'),
           NavigationDestination(
@@ -377,7 +506,8 @@ class _HomeScreenState extends State<HomeScreen> {
             await _saveDocuments();
           },
           onExport: _exportDocument,
-          onReminderSaved: (reminder) => setState(() => _reminders.add(reminder)),
+          onReminderSaved: (reminder) =>
+              setState(() => _reminders.add(reminder)),
         ),
       ),
     );
@@ -393,7 +523,9 @@ class _HomeScreenState extends State<HomeScreen> {
       pw.Page(
         build: (_) => pw.Padding(
           padding: const pw.EdgeInsets.all(24),
-          child: pw.Text(document.text.isEmpty ? 'No text entered.' : document.text),
+          child: pw.Text(
+            document.text.isEmpty ? 'No text entered.' : document.text,
+          ),
         ),
       ),
     );
@@ -478,9 +610,61 @@ class _HomeTab extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Text('শুভেচ্ছা!', style: Theme.of(context).textTheme.headlineMedium),
-          const Text('আপনার নথি শুনতে প্রস্তুত?'),
+          Row(
+            children: [
+              const _BrandMark(size: 48),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'শুভেচ্ছা!',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    Text(
+                      'আপনার নথি শুনতে প্রস্তুত?',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 24),
+          Card(
+            color: Theme.of(context).colorScheme.primary,
+            child: Padding(
+              padding: const EdgeInsets.all(22),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.auto_stories_outlined,
+                    color: Colors.white,
+                    size: 38,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      'নথি পড়ুন, শুনুন এবং নিরাপদে সংরক্ষণ করুন',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'নতুন নথি যোগ করুন',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 12),
           _ActionCard(
             icon: PathokIcons.camera,
             title: 'ক্যামেরা দিয়ে স্ক্যান করুন',
@@ -502,24 +686,75 @@ class _HomeTab extends StatelessWidget {
             onPressed: onImport,
           ),
           const SizedBox(height: 28),
-          Text('সাম্প্রতিক নথি', style: Theme.of(context).textTheme.titleLarge),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'সাম্প্রতিক নথি',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              if (documents.isNotEmpty)
+                Text(
+                  '${documents.length}টি নথি',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ),
           const SizedBox(height: 8),
           if (documents.isEmpty)
-            const Card(
+            Card(
               child: Padding(
-                padding: EdgeInsets.all(20),
-                child: Text('এখনও কোনো নথি নেই। উপরের একটি অপশন দিয়ে শুরু করুন।'),
+                padding: const EdgeInsets.all(22),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.description_outlined,
+                      size: 42,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'এখনও কোনো নথি নেই।\nউপরের একটি অপশন দিয়ে শুরু করুন।',
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
             )
           else
-            ...documents.take(3).map(
-                  (document) => ListTile(
-                    leading: const CircleAvatar(child: Icon(PathokIcons.fileText)),
-                    title: Text(document.title),
-                    subtitle: Text(
-                      document.text.isEmpty ? 'লেখা যোগ করা হয়নি' : 'লেখা সম্পাদনা করা হয়েছে',
+            ...documents
+                .take(3)
+                .map(
+                  (document) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Card(
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
+                        leading: CircleAvatar(
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primaryContainer,
+                          child: Icon(
+                            document.fileType == 'pdf'
+                                ? Icons.picture_as_pdf_outlined
+                                : PathokIcons.fileText,
+                          ),
+                        ),
+                        title: Text(document.title),
+                        subtitle: Text(
+                          document.text.isEmpty
+                              ? 'লেখা যোগ করা হয়নি'
+                              : 'লেখা সম্পাদনা করা হয়েছে',
+                        ),
+                        trailing: const Icon(PathokIcons.chevronRight),
+                        onTap: () => onOpen(document),
+                      ),
                     ),
-                    onTap: () => onOpen(document),
                   ),
                 ),
         ],
@@ -548,10 +783,21 @@ class _ActionCard extends StatelessWidget {
         onTap: onPressed,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              Icon(icon, size: 40, color: Theme.of(context).colorScheme.primary),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  icon,
+                  size: 30,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -627,17 +873,19 @@ class _DocumentScreenState extends State<DocumentScreen> {
       widget.document.text = text;
       widget.onChanged();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-            'ছবির লেখা শনাক্ত হয়েছে। Confidence: ${result.confidenceLabel}',
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'ছবির লেখা শনাক্ত হয়েছে। Confidence: ${result.confidenceLabel}',
+            ),
           ),
-        ));
+        );
       }
     } on Exception catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('OCR ব্যর্থ হয়েছে: $error')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('OCR ব্যর্থ হয়েছে: $error')));
       }
     } finally {
       if (mounted) setState(() => _recognizing = false);
@@ -747,7 +995,11 @@ class _DocumentScreenState extends State<DocumentScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.document.title),
+        title: Text(
+          widget.document.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         actions: [
           IconButton(
             tooltip: 'PDF হিসেবে রপ্তানি',
@@ -763,36 +1015,60 @@ class _DocumentScreenState extends State<DocumentScreen> {
               File(widget.document.sourcePath).existsSync())
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.file(File(widget.document.sourcePath), height: 220, fit: BoxFit.cover),
+              child: Image.file(
+                File(widget.document.sourcePath),
+                height: 220,
+                fit: BoxFit.cover,
+              ),
             ),
           if (widget.document.fileType == 'pdf')
-            const Card(
+            Card(
               child: ListTile(
-                leading: Icon(Icons.picture_as_pdf),
-                title: Text('PDF নথি আমদানি হয়েছে'),
-                subtitle: Text('PDF-এর লেখা OCR ধাপে প্রক্রিয়া করা হবে।'),
+                contentPadding: const EdgeInsets.all(16),
+                leading: Icon(
+                  Icons.picture_as_pdf_outlined,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                title: const Text('PDF নথি আমদানি হয়েছে'),
+                subtitle: const Text(
+                  'PDF-এর লেখা OCR ধাপে প্রক্রিয়া করা হবে।',
+                ),
               ),
             ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'স্বীকৃত লেখা',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'ছবির লেখা ডিভাইসেই শনাক্ত করুন। ফলাফল অবশ্যই যাচাই করে সম্পাদনা করুন।',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: _controller,
-            minLines: 8,
-            maxLines: 16,
-            onChanged: (value) {
-              widget.document.text = value;
-              widget.onChanged();
-              setState(() {});
-            },
-            decoration: const InputDecoration(hintText: 'এখানে নথির লেখা লিখুন...'),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: TextField(
+                controller: _controller,
+                minLines: 8,
+                maxLines: 16,
+                onChanged: (value) {
+                  widget.document.text = value;
+                  widget.onChanged();
+                  setState(() {});
+                },
+                decoration: const InputDecoration(
+                  hintText: 'এখানে নথির লেখা লিখুন...',
+                  border: InputBorder.none,
+                  filled: false,
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 16),
           if (widget.document.fileType == 'image')
@@ -805,7 +1081,9 @@ class _DocumentScreenState extends State<DocumentScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.document_scanner_outlined),
-              label: Text(_recognizing ? 'লেখা শনাক্ত হচ্ছে...' : 'অফলাইন OCR চালান'),
+              label: Text(
+                _recognizing ? 'লেখা শনাক্ত হচ্ছে...' : 'অফলাইন OCR চালান',
+              ),
             ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
@@ -864,7 +1142,18 @@ class _SearchableHistoryState extends State<_SearchableHistory> {
       child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Text('ইতিহাস', style: Theme.of(context).textTheme.headlineMedium),
+          Row(
+            children: [
+              Text('নথি', style: Theme.of(context).textTheme.headlineMedium),
+              const Spacer(),
+              Text(
+                '${widget.documents.length}টি',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 12),
           TextField(
             onChanged: (value) => setState(() => _query = value),
@@ -875,15 +1164,43 @@ class _SearchableHistoryState extends State<_SearchableHistory> {
           ),
           const SizedBox(height: 12),
           if (filtered.isEmpty)
-            const Text('আপনার সংরক্ষিত নথি এখানে দেখা যাবে।')
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    const Icon(Icons.search_off, size: 42),
+                    const SizedBox(height: 10),
+                    Text(
+                      _query.trim().isEmpty
+                          ? 'আপনার সংরক্ষিত নথি এখানে দেখা যাবে।'
+                          : 'এই খোঁজের সঙ্গে কোনো নথি মেলেনি।',
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            )
           else
             ...filtered.map(
-              (document) => Card(
-                child: ListTile(
-                  leading: const Icon(PathokIcons.fileText),
-                  title: Text(document.title),
-                  subtitle: Text(document.text.isEmpty ? 'খালি লেখা' : document.text),
-                  onTap: () => widget.onOpen(document),
+              (document) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Card(
+                  child: ListTile(
+                    leading: Icon(
+                      document.fileType == 'pdf'
+                          ? Icons.picture_as_pdf_outlined
+                          : PathokIcons.fileText,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    title: Text(document.title),
+                    subtitle: Text(
+                      document.text.isEmpty ? 'খালি লেখা' : document.text,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    onTap: () => widget.onOpen(document),
+                  ),
                 ),
               ),
             ),
@@ -915,52 +1232,84 @@ class SettingsTab extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Text('সেটিংস', style: Theme.of(context).textTheme.headlineMedium),
-          const SizedBox(height: 12),
-          const ListTile(
-            leading: Icon(PathokIcons.language),
-            title: Text('ভাষা'),
-            subtitle: Text('বাংলা'),
+          Row(
+            children: [
+              const _BrandMark(size: 48),
+              const SizedBox(width: 14),
+              Text('সেটিংস', style: Theme.of(context).textTheme.headlineMedium),
+            ],
           ),
           const SizedBox(height: 12),
-          Text('Medicine reminders', style: Theme.of(context).textTheme.titleLarge),
+          Card(
+            child: Column(
+              children: [
+                const ListTile(
+                  leading: Icon(PathokIcons.language),
+                  title: Text('ভাষা'),
+                  subtitle: Text('বাংলা'),
+                ),
+                SwitchListTile(
+                  secondary: const Icon(Icons.lock_outline),
+                  title: const Text('অ্যাপ লক'),
+                  subtitle: const Text(
+                    'ডিভাইসের biometrics বা PIN ব্যবহার করুন',
+                  ),
+                  value: lockEnabled,
+                  onChanged: onLockChanged,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text('রিমাইন্ডার', style: Theme.of(context).textTheme.titleLarge),
           if (reminders.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text('এখনও কোনো reminder সংরক্ষণ করা হয়নি।'),
+            Card(
+              child: const Padding(
+                padding: EdgeInsets.all(18),
+                child: Text('এখনও কোনো reminder সংরক্ষণ করা হয়নি।'),
+              ),
             )
           else
             ...reminders.map(
-              (reminder) => Card(
-                child: ListTile(
-                  leading: const Icon(PathokIcons.alarm),
-                  title: Text(reminder.medicineName),
-                  subtitle: Text(
-                    '${reminder.hour.toString().padLeft(2, '0')}:${reminder.minute.toString().padLeft(2, '0')} • ব্যবহার যাচাই করুন',
-                  ),
-                  trailing: IconButton(
-                    tooltip: 'Reminder মুছুন',
-                    icon: const Icon(PathokIcons.trash),
-                    onPressed: () => onDeleteReminder(reminder),
+              (reminder) => Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Card(
+                  child: ListTile(
+                    leading: const Icon(PathokIcons.alarm),
+                    title: Text(reminder.medicineName),
+                    subtitle: Text(
+                      '${reminder.hour.toString().padLeft(2, '0')}:${reminder.minute.toString().padLeft(2, '0')} • ব্যবহার যাচাই করুন',
+                    ),
+                    trailing: IconButton(
+                      tooltip: 'Reminder মুছুন',
+                      icon: const Icon(PathokIcons.trash),
+                      onPressed: () => onDeleteReminder(reminder),
+                    ),
                   ),
                 ),
               ),
             ),
           const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: onDeleteAllData,
-            icon: const Icon(PathokIcons.trash),
-            label: const Text('সব স্থানীয় তথ্য মুছুন'),
-          ),
-          const ListTile(
-            leading: Icon(PathokIcons.wifi),
-            title: Text('অফলাইন মোড'),
-            subtitle: Text('মূল কাজগুলো ইন্টারনেট ছাড়াই চলবে'),
-          ),
-          const ListTile(
-            leading: Icon(PathokIcons.accessible),
-            title: Text('অ্যাক্সেসিবিলিটি'),
-            subtitle: Text('TalkBack এবং বড় লেখা সমর্থিত'),
+          Card(
+            child: Column(
+              children: [
+                const ListTile(
+                  leading: Icon(PathokIcons.wifi),
+                  title: Text('অফলাইন মোড'),
+                  subtitle: Text('মূল কাজগুলো ইন্টারনেট ছাড়াই চলবে'),
+                ),
+                const ListTile(
+                  leading: Icon(PathokIcons.accessible),
+                  title: Text('অ্যাক্সেসিবিলিটি'),
+                  subtitle: Text('TalkBack এবং বড় লেখা সমর্থিত'),
+                ),
+                ListTile(
+                  leading: const Icon(PathokIcons.trash),
+                  title: const Text('সব স্থানীয় তথ্য মুছুন'),
+                  onTap: onDeleteAllData,
+                ),
+              ],
+            ),
           ),
           const AboutListTile(
             applicationName: 'পাঠক',
@@ -987,16 +1336,16 @@ class LocalDocument {
   final String fileType;
 
   Map<String, dynamic> toJson() => {
-        'title': title,
-        'sourcePath': sourcePath,
-        'text': text,
-        'fileType': fileType,
-      };
+    'title': title,
+    'sourcePath': sourcePath,
+    'text': text,
+    'fileType': fileType,
+  };
 
   factory LocalDocument.fromJson(Map<String, dynamic> json) => LocalDocument(
-        title: json['title'] as String? ?? 'নথি',
-        sourcePath: json['sourcePath'] as String? ?? '',
-        text: json['text'] as String? ?? '',
-        fileType: json['fileType'] as String? ?? 'image',
-      );
+    title: json['title'] as String? ?? 'নথি',
+    sourcePath: json['sourcePath'] as String? ?? '',
+    text: json['text'] as String? ?? '',
+    fileType: json['fileType'] as String? ?? 'image',
+  );
 }
