@@ -53,6 +53,32 @@ class SecureDataStore {
     await _storage.delete(key: _keyKey);
   }
 
+  Future<String> exportEncryptedPayload() async {
+    final encoded = await _storage.read(key: _payloadKey);
+    if (encoded == null) {
+      await write(<String, dynamic>{});
+      return (await _storage.read(key: _payloadKey))!;
+    }
+    return encoded;
+  }
+
+  Future<void> importEncryptedPayload(String encoded) async {
+    try {
+      final bytes = base64Url.decode(encoded.trim());
+      if (bytes.length < 28) throw const FormatException();
+      final key = await _key();
+      final box = SecretBox(
+        bytes.sublist(12, bytes.length - 16),
+        nonce: bytes.sublist(0, 12),
+        mac: Mac(bytes.sublist(bytes.length - 16)),
+      );
+      await _cipher.decrypt(box, secretKey: key);
+      await _storage.write(key: _payloadKey, value: encoded.trim());
+    } on Exception {
+      throw StateError('Backup ফাইলটি বৈধ নয় বা এই ডিভাইসের নয়।');
+    }
+  }
+
   Future<SecretKey> _key() async {
     final existing = await _storage.read(key: _keyKey);
     if (existing != null) {

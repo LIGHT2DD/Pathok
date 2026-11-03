@@ -27,6 +27,14 @@ class MedicineReminder {
   final int minute;
   final DateTime confirmedAt;
 
+  MedicineReminder copyWith({int? hour, int? minute}) => MedicineReminder(
+        medicineName: medicineName,
+        instructions: instructions,
+        hour: hour ?? this.hour,
+        minute: minute ?? this.minute,
+        confirmedAt: confirmedAt,
+      );
+
   Map<String, dynamic> toJson() => {
         'medicineName': medicineName,
         'instructions': instructions,
@@ -103,5 +111,13 @@ class PrescriptionService {
         .toList();
     payload['medicine_reminders'] = values;
     await SecureDataStore.instance.write(payload);
+  }
+
+  Future<void> replaceReminder(
+    MedicineReminder previous,
+    MedicineReminder replacement,
+  ) async {
+    await deleteReminder(previous);
+    await saveReminder(replacement);
   }
 }

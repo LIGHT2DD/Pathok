@@ -9,6 +9,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:share_plus/share_plus.dart';
 
 import 'ocr_service.dart';
 import 'notification_service.dart';
@@ -423,13 +424,21 @@ class _HomeScreenState extends State<HomeScreen> {
         onImportPdf: _pickPdf,
         onOpen: _openDocument,
       ),
-      HistoryTab(documents: _documents, onOpen: _openDocument),
+      HistoryTab(
+        documents: _documents,
+        onOpen: _openDocument,
+        onRename: _renameDocument,
+        onDelete: _deleteDocument,
+      ),
       SettingsTab(
         reminders: _reminders,
         onDeleteAllData: _confirmDeleteAllData,
         lockEnabled: _lockEnabled,
         onLockChanged: _setLockEnabled,
         onDeleteReminder: _deleteReminder,
+        onEditReminder: _editReminder,
+        onExportBackup: _exportBackup,
+        onImportBackup: _importBackup,
       ),
     ];
     return Scaffold(
@@ -454,7 +463,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final file = await ImagePicker().pickImage(source: source);
+    final file = await ImagePicker().pickImage(
+      source: source,
+      maxWidth: 2400,
+      maxHeight: 2400,
+      imageQuality: 92,
+    );
     if (!mounted || file == null) return;
     final storedPath = await _copyToAppStorage(file.path);
     final document = LocalDocument(
@@ -556,6 +570,127 @@ class _HomeScreenState extends State<HomeScreen> {
     await _prescriptionService.deleteReminder(reminder);
     await ReminderNotificationService.instance.cancel(reminder);
     if (mounted) setState(() => _reminders.remove(reminder));
+  }
+
+  Future<void> _editReminder(MedicineReminder reminder) async {
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: reminder.hour, minute: reminder.minute),
+      helpText: '${reminder.medicineName} - নতুন সময়',
+    );
+    if (time == null) return;
+    final replacement = reminder.copyWith(hour: time.hour, minute: time.minute);
+    await _prescriptionService.replaceReminder(reminder, replacement);
+    await ReminderNotificationService.instance.cancel(reminder);
+    await ReminderNotificationService.instance.schedule(replacement);
+    if (mounted) {
+      setState(() {
+        final index = _reminders.indexOf(reminder);
+        if (index >= 0) _reminders[index] = replacement;
+      });
+    }
+  }
+
+  Future<void> _exportBackup() async {
+    try {
+      final encoded = await SecureDataStore.instance.exportEncryptedPayload();
+      final path = await FilePicker.saveFile(
+        dialogTitle: 'Pathok backup সংরক্ষণ করুন',
+        fileName: 'pathok_backup.txt',
+        bytes: utf8.encode(encoded),
+      );
+      if (mounted && path != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Encrypted backup সংরক্ষণ হয়েছে।')),
+        );
+      }
+    } on Exception catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Backup সংরক্ষণ ব্যর্থ হয়েছে: $error')),
+        );
+      }
+    }
+  }
+
+  Future<void> _importBackup() async {
+    final files = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['txt', 'backup'],
+    );
+    if (!mounted || files.isEmpty || files.first.path == null) return;
+    try {
+      final selected = files.first;
+      final content = await File(selected.path!).readAsString();
+      await SecureDataStore.instance.importEncryptedPayload(content);
+      await _loadDocuments();
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Backup restore হয়েছে।')));
+      }
+    } on Exception catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Backup restore ব্যর্থ হয়েছে: $error')),
+        );
+      }
+    }
+  }
+
+  Future<void> _renameDocument(LocalDocument document) async {
+    final controller = TextEditingController(text: document.title);
+    final title = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('নথির নাম পরিবর্তন করুন'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textInputAction: TextInputAction.done,
+          decoration: const InputDecoration(labelText: 'নথির নাম'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('বাতিল'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('সংরক্ষণ'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (title == null || title.isEmpty) return;
+    setState(() => document.title = title);
+    await _saveDocuments();
+  }
+
+  Future<void> _deleteDocument(LocalDocument document) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('নথি মুছবেন?'),
+        content: Text('“${document.title}” স্থায়ীভাবে মুছে যাবে।'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('বাতিল'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('মুছুন'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final file = File(document.sourcePath);
+    if (await file.exists()) await file.delete();
+    setState(() => _documents.remove(document));
+    await _saveDocuments();
   }
 
   Future<void> _confirmDeleteAllData() async {
@@ -1006,6 +1141,11 @@ class _DocumentScreenState extends State<DocumentScreen> {
             onPressed: () => widget.onExport(widget.document),
             icon: const Icon(Icons.picture_as_pdf),
           ),
+          IconButton(
+            tooltip: 'লেখা শেয়ার করুন',
+            onPressed: _shareText,
+            icon: const Icon(Icons.share_outlined),
+          ),
         ],
       ),
       body: ListView(
@@ -1047,6 +1187,15 @@ class _DocumentScreenState extends State<DocumentScreen> {
             'ছবির লেখা ডিভাইসেই শনাক্ত করুন। ফলাফল অবশ্যই যাচাই করে সম্পাদনা করুন।',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Card(
+            color: Theme.of(context).colorScheme.secondaryContainer,
+            child: const ListTile(
+              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              leading: Icon(Icons.offline_bolt_outlined),
+              title: Text('Offline বাংলা + English OCR'),
+              subtitle: Text('ছবি পরিষ্কার ও সোজা রাখলে ফলাফল ভালো হবে।'),
             ),
           ),
           const SizedBox(height: 12),
@@ -1103,25 +1252,58 @@ class _DocumentScreenState extends State<DocumentScreen> {
       ),
     );
   }
+
+  Future<void> _shareText() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('শেয়ার করার মতো লেখা নেই।')),
+      );
+      return;
+    }
+    await SharePlus.instance.share(
+      ShareParams(text: text, subject: widget.document.title),
+    );
+  }
 }
 
 class HistoryTab extends StatelessWidget {
-  const HistoryTab({required this.documents, required this.onOpen, super.key});
+  const HistoryTab({
+    required this.documents,
+    required this.onOpen,
+    required this.onRename,
+    required this.onDelete,
+    super.key,
+  });
 
   final List<LocalDocument> documents;
   final ValueChanged<LocalDocument> onOpen;
+  final ValueChanged<LocalDocument> onRename;
+  final ValueChanged<LocalDocument> onDelete;
 
   @override
   Widget build(BuildContext context) {
-    return _SearchableHistory(documents: documents, onOpen: onOpen);
+    return _SearchableHistory(
+      documents: documents,
+      onOpen: onOpen,
+      onRename: onRename,
+      onDelete: onDelete,
+    );
   }
 }
 
 class _SearchableHistory extends StatefulWidget {
-  const _SearchableHistory({required this.documents, required this.onOpen});
+  const _SearchableHistory({
+    required this.documents,
+    required this.onOpen,
+    required this.onRename,
+    required this.onDelete,
+  });
 
   final List<LocalDocument> documents;
   final ValueChanged<LocalDocument> onOpen;
+  final ValueChanged<LocalDocument> onRename;
+  final ValueChanged<LocalDocument> onDelete;
 
   @override
   State<_SearchableHistory> createState() => _SearchableHistoryState();
@@ -1199,6 +1381,19 @@ class _SearchableHistoryState extends State<_SearchableHistory> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    trailing: PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'rename') widget.onRename(document);
+                        if (value == 'delete') widget.onDelete(document);
+                      },
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(
+                          value: 'rename',
+                          child: Text('নাম পরিবর্তন'),
+                        ),
+                        PopupMenuItem(value: 'delete', child: Text('মুছুন')),
+                      ],
+                    ),
                     onTap: () => widget.onOpen(document),
                   ),
                 ),
@@ -1217,6 +1412,9 @@ class SettingsTab extends StatelessWidget {
     required this.lockEnabled,
     required this.onLockChanged,
     required this.onDeleteReminder,
+    required this.onEditReminder,
+    required this.onExportBackup,
+    required this.onImportBackup,
     super.key,
   });
 
@@ -1225,6 +1423,9 @@ class SettingsTab extends StatelessWidget {
   final bool lockEnabled;
   final ValueChanged<bool> onLockChanged;
   final ValueChanged<MedicineReminder> onDeleteReminder;
+  final ValueChanged<MedicineReminder> onEditReminder;
+  final VoidCallback onExportBackup;
+  final VoidCallback onImportBackup;
 
   @override
   Widget build(BuildContext context) {
@@ -1285,6 +1486,7 @@ class SettingsTab extends StatelessWidget {
                       icon: const Icon(PathokIcons.trash),
                       onPressed: () => onDeleteReminder(reminder),
                     ),
+                    onTap: () => onEditReminder(reminder),
                   ),
                 ),
               ),
@@ -1308,6 +1510,20 @@ class SettingsTab extends StatelessWidget {
                   title: const Text('সব স্থানীয় তথ্য মুছুন'),
                   onTap: onDeleteAllData,
                 ),
+                ListTile(
+                  leading: const Icon(Icons.upload_file_outlined),
+                  title: const Text('Encrypted backup export'),
+                  subtitle: const Text('নথির তথ্য একটি encrypted ফাইলে রাখুন'),
+                  onTap: onExportBackup,
+                ),
+                ListTile(
+                  leading: const Icon(Icons.download_outlined),
+                  title: const Text('Backup restore'),
+                  subtitle: const Text(
+                    'আগের Pathok backup থেকে তথ্য ফিরিয়ে আনুন',
+                  ),
+                  onTap: onImportBackup,
+                ),
               ],
             ),
           ),
@@ -1330,7 +1546,7 @@ class LocalDocument {
     required this.fileType,
   });
 
-  final String title;
+  String title;
   final String sourcePath;
   String text;
   final String fileType;

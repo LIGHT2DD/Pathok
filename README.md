@@ -22,6 +22,11 @@ The initial Flutter foundation includes:
 - History and settings surfaces designed for TalkBack and large-text use.
 - Searchable document history.
 - Reminder deletion with notification cancellation.
+- Document rename and individual deletion with copied-file cleanup.
+- Reminder time editing with notification rescheduling.
+- Encrypted backup export and restore through a user-selected local file.
+- Recognized text sharing through the platform share sheet.
+- Import-time image resizing/compression to reduce oversized OCR inputs.
 - Onboarding completion stored locally with `shared_preferences`.
 
 The current document list persists locally. OCR uses the Tesseract 4 Android
@@ -76,6 +81,15 @@ consented fallback.
 - Add reminder edit, snooze, and multiple-times-per-day workflows.
 - Add a production CI pipeline and configure a user-owned upload keystore
   before Play publishing.
+
+The repository now includes a GitHub Actions validation workflow for analyzer,
+tests, and a debug APK build. Native crop/deskew and word-level confidence
+still require an Android bridge and device validation; the current OCR flow
+uses import-time image resizing and the bundled offline models.
+
+Backups are encrypted payload exports intended for the same installation/key
+chain. They are not cloud sync and cannot be restored after the secure-storage
+key is permanently lost.
 
 ## Security notes
 
