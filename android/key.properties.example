@@ -1,0 +1,6 @@
+# Copy this file to android/key.properties and replace every value.
+# Do not commit android/key.properties or the keystore.
+storeFile=path/to/pathok-upload-key.jks
+storePassword=replace-with-keystore-password
+keyAlias=pathok
+keyPassword=replace-with-key-password

@@ -38,7 +38,13 @@ dependencies:
   path_provider: ^2.1.6
   file_picker: ^13.3.2
   pdf: ^3.13.1
-  google_mlkit_text_recognition: ^0.17.1
+  flutter_local_notifications: ^22.3.3
+  timezone: ^0.11.2
+  tabler_icons: ^2.5.0+1
+  flutter_secure_storage: ^11.2.0
+  cryptography: ^2.9.0
+  local_auth: ^3.0.2
+  flutter_tesseract_ocr: ^0.4.31
 
 dev_dependencies:
   flutter_test:
@@ -50,6 +56,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -61,6 +68,21 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  assets:
+    - assets/branding/pathok_icon.png
+    - assets/tessdata_config.json
+    - assets/tessdata/
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: assets/branding/pathok_icon.png
+  adaptive_icon_background: "#081B5C"
+  adaptive_icon_foreground: assets/branding/pathok_icon.png
+
+dependency_overrides:
+  flutter_tesseract_ocr:
+    path: third_party/flutter_tesseract_ocr
 
   # To add assets to your application, add an assets section, like this:
   # assets:

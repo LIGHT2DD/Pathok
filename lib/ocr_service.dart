@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 
 class OcrQualityResult {
   const OcrQualityResult({
@@ -25,12 +25,6 @@ class OcrResult {
 }
 
 class OfflineOcrService {
-  OfflineOcrService()
-      : _recognizer =
-            TextRecognizer(script: TextRecognitionScript.latin);
-
-  final TextRecognizer _recognizer;
-
   Future<OcrResult> recognize(String path) async {
     final quality = await _checkQuality(path);
     if (!quality.isUsable) {
@@ -41,13 +35,19 @@ class OfflineOcrService {
       );
     }
 
-    final recognized =
-        await _recognizer.processImage(InputImage.fromFilePath(path));
-    final text = recognized.text.trim();
+    final text = (await FlutterTesseractOcr.extractText(
+      path,
+      language: 'ben+eng',
+      args: <String, String>{
+        'psm': '3',
+        'preserve_interword_spaces': '1',
+      },
+    ))
+        .trim();
     return OcrResult(
       text: text,
       quality: quality,
-      confidenceLabel: 'মডেল confidence দেয়নি',
+      confidenceLabel: 'Tesseract confidence দেয়নি; ফলাফল যাচাই করুন',
     );
   }
 
@@ -72,5 +72,5 @@ class OfflineOcrService {
     );
   }
 
-  Future<void> close() => _recognizer.close();
+  Future<void> close() async {}
 }
