@@ -8,6 +8,7 @@ Bangla and English users.
 The initial Flutter foundation includes:
 
 - Bangla-first Material 3 onboarding and navigation.
+- Persisted Bangla/English UI language switch in Settings.
 - Camera capture and gallery image import through the native Android picker.
 - App-private persistent document metadata and source-file copies.
 - PDF import and text PDF export.

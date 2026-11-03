@@ -170,6 +170,7 @@ class AppRoot extends StatefulWidget {
 class _AppRootState extends State<AppRoot> {
   bool? _onboardingComplete;
   bool _locked = false;
+  bool _english = false;
 
   @override
   void initState() {
@@ -193,6 +194,7 @@ class _AppRootState extends State<AppRoot> {
         _onboardingComplete =
             preferences.getBool('onboarding_complete') ?? false;
         _locked = locked;
+        _english = preferences.getBool('english_language') ?? false;
       });
     }
   }
@@ -205,18 +207,36 @@ class _AppRootState extends State<AppRoot> {
     }
   }
 
+  Future<void> _setEnglish(bool english) async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setBool('english_language', english);
+    if (mounted) setState(() => _english = english);
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (_onboardingComplete == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-    if (_locked) {
-      return LockScreen(onUnlock: _loadPreference);
-    }
-    return _onboardingComplete!
-        ? const HomeScreen()
+    final child = _onboardingComplete == null
+        ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+        : _locked
+        ? LockScreen(onUnlock: _loadPreference)
+        : _onboardingComplete!
+        ? HomeScreen(onLanguageChanged: _setEnglish)
         : OnboardingScreen(onComplete: _completeOnboarding);
+    return _PathokLocale(english: _english, child: child);
   }
+}
+
+class _PathokLocale extends InheritedWidget {
+  const _PathokLocale({required this.english, required super.child});
+
+  final bool english;
+
+  static bool of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_PathokLocale>()!.english;
+
+  @override
+  bool updateShouldNotify(_PathokLocale oldWidget) =>
+      english != oldWidget.english;
 }
 
 class _BrandMark extends StatelessWidget {
@@ -283,6 +303,7 @@ class OnboardingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final english = _PathokLocale.of(context);
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -317,14 +338,18 @@ class OnboardingScreen extends StatelessWidget {
                 color: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(height: 32),
-              const Text(
-                'ছবি বা নথি থেকে লেখা পড়ুন এবং শুনুন।',
+              Text(
+                english
+                    ? 'Read and listen to text from images or documents.'
+                    : 'ছবি বা নথি থেকে লেখা পড়ুন এবং শুনুন।',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 22),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'পাঠক আপনার নথি এই ডিভাইসেই নিরাপদে রাখে। শুরু করতে নিচের বোতামটি চাপুন।',
+              Text(
+                english
+                    ? 'Pathok keeps your documents safely on this device. Press below to begin.'
+                    : 'পাঠক আপনার নথি এই ডিভাইসেই নিরাপদে রাখে। শুরু করতে নিচের বোতামটি চাপুন।',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 17),
               ),
@@ -332,9 +357,12 @@ class OnboardingScreen extends StatelessWidget {
               FilledButton.icon(
                 onPressed: onComplete,
                 icon: const Icon(Icons.arrow_forward),
-                label: const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Text('শুরু করুন', style: TextStyle(fontSize: 18)),
+                label: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    english ? 'Get started' : 'শুরু করুন',
+                    style: const TextStyle(fontSize: 18),
+                  ),
                 ),
               ),
             ],
@@ -346,7 +374,9 @@ class OnboardingScreen extends StatelessWidget {
 }
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({required this.onLanguageChanged, super.key});
+
+  final ValueChanged<bool> onLanguageChanged;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -439,23 +469,28 @@ class _HomeScreenState extends State<HomeScreen> {
         onEditReminder: _editReminder,
         onExportBackup: _exportBackup,
         onImportBackup: _importBackup,
+        onLanguageChanged: widget.onLanguageChanged,
       ),
     ];
+    final english = _PathokLocale.of(context);
     return Scaffold(
       body: IndexedStack(index: _selectedIndex, children: pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) =>
             setState(() => _selectedIndex = index),
-        destinations: const [
-          NavigationDestination(icon: Icon(PathokIcons.home), label: 'হোম'),
+        destinations: [
           NavigationDestination(
-            icon: Icon(PathokIcons.history),
-            label: 'ইতিহাস',
+            icon: const Icon(PathokIcons.home),
+            label: english ? 'Home' : 'হোম',
           ),
           NavigationDestination(
-            icon: Icon(PathokIcons.settings),
-            label: 'সেটিংস',
+            icon: const Icon(PathokIcons.history),
+            label: english ? 'Documents' : 'নথি',
+          ),
+          NavigationDestination(
+            icon: const Icon(PathokIcons.settings),
+            label: english ? 'Settings' : 'সেটিংস',
           ),
         ],
       ),
@@ -741,6 +776,7 @@ class _HomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final english = _PathokLocale.of(context);
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.all(20),
@@ -754,11 +790,13 @@ class _HomeTab extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'শুভেচ্ছা!',
+                      english ? 'Welcome!' : 'শুভেচ্ছা!',
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     Text(
-                      'আপনার নথি শুনতে প্রস্তুত?',
+                      english
+                          ? 'Ready to listen to your documents?'
+                          : 'আপনার নথি শুনতে প্রস্তুত?',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -783,7 +821,9 @@ class _HomeTab extends StatelessWidget {
                   const SizedBox(width: 16),
                   Expanded(
                     child: Text(
-                      'নথি পড়ুন, শুনুন এবং নিরাপদে সংরক্ষণ করুন',
+                      english
+                          ? 'Read, listen to, and securely save documents'
+                          : 'নথি পড়ুন, শুনুন এবং নিরাপদে সংরক্ষণ করুন',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
@@ -796,28 +836,34 @@ class _HomeTab extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            'নতুন নথি যোগ করুন',
+            english ? 'Add a new document' : 'নতুন নথি যোগ করুন',
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 12),
           _ActionCard(
             icon: PathokIcons.camera,
-            title: 'ক্যামেরা দিয়ে স্ক্যান করুন',
-            subtitle: 'ছাপা নথির ছবি তুলুন',
+            title: english ? 'Scan with camera' : 'ক্যামেরা দিয়ে স্ক্যান করুন',
+            subtitle: english
+                ? 'Take a photo of a printed document'
+                : 'ছাপা নথির ছবি তুলুন',
             onPressed: onCapture,
           ),
           const SizedBox(height: 12),
           _ActionCard(
             icon: PathokIcons.fileInvoice,
-            title: 'PDF বেছে নিন',
-            subtitle: 'ডিভাইস থেকে একটি PDF নিন',
+            title: english ? 'Choose a PDF' : 'PDF বেছে নিন',
+            subtitle: english
+                ? 'Select a PDF from your device'
+                : 'ডিভাইস থেকে একটি PDF নিন',
             onPressed: onImportPdf,
           ),
           const SizedBox(height: 12),
           _ActionCard(
             icon: PathokIcons.photo,
-            title: 'ছবি বেছে নিন',
-            subtitle: 'গ্যালারি থেকে একটি ছবি নিন',
+            title: english ? 'Choose an image' : 'ছবি বেছে নিন',
+            subtitle: english
+                ? 'Select an image from your gallery'
+                : 'গ্যালারি থেকে একটি ছবি নিন',
             onPressed: onImport,
           ),
           const SizedBox(height: 28),
@@ -825,12 +871,14 @@ class _HomeTab extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'সাম্প্রতিক নথি',
+                english ? 'Recent documents' : 'সাম্প্রতিক নথি',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               if (documents.isNotEmpty)
                 Text(
-                  '${documents.length}টি নথি',
+                  english
+                      ? '${documents.length} documents'
+                      : '${documents.length}টি নথি',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -850,8 +898,10 @@ class _HomeTab extends StatelessWidget {
                       color: Theme.of(context).colorScheme.primary,
                     ),
                     const SizedBox(height: 10),
-                    const Text(
-                      'এখনও কোনো নথি নেই।\nউপরের একটি অপশন দিয়ে শুরু করুন।',
+                    Text(
+                      english
+                          ? 'No documents yet.\nChoose an option above to begin.'
+                          : 'এখনও কোনো নথি নেই।\nউপরের একটি অপশন দিয়ে শুরু করুন।',
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -883,8 +933,12 @@ class _HomeTab extends StatelessWidget {
                         title: Text(document.title),
                         subtitle: Text(
                           document.text.isEmpty
-                              ? 'লেখা যোগ করা হয়নি'
-                              : 'লেখা সম্পাদনা করা হয়েছে',
+                              ? (english
+                                    ? 'No text added'
+                                    : 'লেখা যোগ করা হয়নি')
+                              : (english
+                                    ? 'Text has been edited'
+                                    : 'লেখা সম্পাদনা করা হয়েছে'),
                         ),
                         trailing: const Icon(PathokIcons.chevronRight),
                         onTap: () => onOpen(document),
@@ -1314,6 +1368,7 @@ class _SearchableHistoryState extends State<_SearchableHistory> {
 
   @override
   Widget build(BuildContext context) {
+    final english = _PathokLocale.of(context);
     final filtered = widget.documents.where((document) {
       final query = _query.trim().toLowerCase();
       return query.isEmpty ||
@@ -1326,10 +1381,15 @@ class _SearchableHistoryState extends State<_SearchableHistory> {
         children: [
           Row(
             children: [
-              Text('নথি', style: Theme.of(context).textTheme.headlineMedium),
+              Text(
+                english ? 'Documents' : 'নথি',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
               const Spacer(),
               Text(
-                '${widget.documents.length}টি',
+                english
+                    ? '${widget.documents.length}'
+                    : '${widget.documents.length}টি',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -1339,9 +1399,9 @@ class _SearchableHistoryState extends State<_SearchableHistory> {
           const SizedBox(height: 12),
           TextField(
             onChanged: (value) => setState(() => _query = value),
-            decoration: const InputDecoration(
-              prefixIcon: Icon(Icons.search),
-              labelText: 'নথি খুঁজুন',
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.search),
+              labelText: english ? 'Search documents' : 'নথি খুঁজুন',
             ),
           ),
           const SizedBox(height: 12),
@@ -1355,8 +1415,12 @@ class _SearchableHistoryState extends State<_SearchableHistory> {
                     const SizedBox(height: 10),
                     Text(
                       _query.trim().isEmpty
-                          ? 'আপনার সংরক্ষিত নথি এখানে দেখা যাবে।'
-                          : 'এই খোঁজের সঙ্গে কোনো নথি মেলেনি।',
+                          ? (english
+                                ? 'Your saved documents will appear here.'
+                                : 'আপনার সংরক্ষিত নথি এখানে দেখা যাবে।')
+                          : (english
+                                ? 'No documents match this search.'
+                                : 'এই খোঁজের সঙ্গে কোনো নথি মেলেনি।'),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -1377,7 +1441,9 @@ class _SearchableHistoryState extends State<_SearchableHistory> {
                     ),
                     title: Text(document.title),
                     subtitle: Text(
-                      document.text.isEmpty ? 'খালি লেখা' : document.text,
+                      document.text.isEmpty
+                          ? (english ? 'Empty text' : 'খালি লেখা')
+                          : document.text,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -1386,12 +1452,15 @@ class _SearchableHistoryState extends State<_SearchableHistory> {
                         if (value == 'rename') widget.onRename(document);
                         if (value == 'delete') widget.onDelete(document);
                       },
-                      itemBuilder: (context) => const [
+                      itemBuilder: (context) => [
                         PopupMenuItem(
                           value: 'rename',
-                          child: Text('নাম পরিবর্তন'),
+                          child: Text(english ? 'Rename' : 'নাম পরিবর্তন'),
                         ),
-                        PopupMenuItem(value: 'delete', child: Text('মুছুন')),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Text(english ? 'Delete' : 'মুছুন'),
+                        ),
                       ],
                     ),
                     onTap: () => widget.onOpen(document),
@@ -1415,6 +1484,7 @@ class SettingsTab extends StatelessWidget {
     required this.onEditReminder,
     required this.onExportBackup,
     required this.onImportBackup,
+    required this.onLanguageChanged,
     super.key,
   });
 
@@ -1426,9 +1496,11 @@ class SettingsTab extends StatelessWidget {
   final ValueChanged<MedicineReminder> onEditReminder;
   final VoidCallback onExportBackup;
   final VoidCallback onImportBackup;
+  final ValueChanged<bool> onLanguageChanged;
 
   @override
   Widget build(BuildContext context) {
+    final english = _PathokLocale.of(context);
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.all(20),
@@ -1437,17 +1509,22 @@ class SettingsTab extends StatelessWidget {
             children: [
               const _BrandMark(size: 48),
               const SizedBox(width: 14),
-              Text('সেটিংস', style: Theme.of(context).textTheme.headlineMedium),
+              Text(
+                english ? 'Settings' : 'সেটিংস',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
             ],
           ),
           const SizedBox(height: 12),
           Card(
             child: Column(
               children: [
-                const ListTile(
-                  leading: Icon(PathokIcons.language),
-                  title: Text('ভাষা'),
-                  subtitle: Text('বাংলা'),
+                SwitchListTile(
+                  secondary: const Icon(PathokIcons.language),
+                  title: Text(english ? 'Language' : 'ভাষা'),
+                  subtitle: Text(english ? 'English' : 'বাংলা'),
+                  value: english,
+                  onChanged: onLanguageChanged,
                 ),
                 SwitchListTile(
                   secondary: const Icon(Icons.lock_outline),
