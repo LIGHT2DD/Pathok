@@ -13,6 +13,10 @@ The initial Flutter foundation includes:
   the selected language.
 - Compact task-first onboarding and home layout without a promotional hero
   banner.
+- Language-aware PDF export, text-to-speech, dialogs, reminders, backups, and
+  destructive actions.
+- Shared Material dialog styling and responsive content width for Chrome and
+  larger screens.
 - Camera capture and gallery image import through the native Android picker.
 - App-private persistent document metadata and source-file copies.
 - PDF import and text PDF export.

@@ -164,6 +164,15 @@ class PathokApp extends StatelessWidget {
             side: const BorderSide(color: Color(0xffe6ebf2)),
           ),
         ),
+        dialogTheme: DialogThemeData(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
+        ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: Colors.white,
@@ -267,6 +276,24 @@ class _PathokLocale extends InheritedWidget {
   @override
   bool updateShouldNotify(_PathokLocale oldWidget) =>
       english != oldWidget.english;
+}
+
+class PathokStrings {
+  const PathokStrings(this.english);
+
+  final bool english;
+
+  String get cancel => english ? 'Cancel' : 'বাতিল';
+  String get save => english ? 'Save' : 'সংরক্ষণ';
+  String get delete => english ? 'Delete' : 'মুছুন';
+  String get noText =>
+      english ? 'No text entered.' : 'কোনো লেখা যোগ করা হয়নি।';
+  String get exportedPdf => english ? 'PDF exported.' : 'PDF সংরক্ষণ হয়েছে।';
+  String get deleteAll =>
+      english ? 'Delete all local data' : 'সব স্থানীয় তথ্য মুছুন';
+
+  static PathokStrings of(BuildContext context) =>
+      PathokStrings(_PathokLocale.of(context));
 }
 
 class _BrandMark extends StatelessWidget {
@@ -445,6 +472,22 @@ class _OnboardingBenefit extends StatelessWidget {
           child: Icon(icon, color: Theme.of(context).colorScheme.primary),
         ),
         title: Text(text),
+      ),
+    );
+  }
+}
+
+class _ResponsiveContent extends StatelessWidget {
+  const _ResponsiveContent({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 760),
+        child: child,
       ),
     );
   }
@@ -646,6 +689,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _exportDocument(LocalDocument document) async {
+    final strings = PathokStrings.of(context);
     final directory = await getApplicationDocumentsDirectory();
     final output = File(
       '${directory.path}${Platform.pathSeparator}${document.title.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_')}.pdf',
@@ -656,7 +700,7 @@ class _HomeScreenState extends State<HomeScreen> {
         build: (_) => pw.Padding(
           padding: const pw.EdgeInsets.all(24),
           child: pw.Text(
-            document.text.isEmpty ? 'No text entered.' : document.text,
+            document.text.isEmpty ? strings.noText : document.text,
           ),
         ),
       ),
@@ -664,7 +708,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await output.writeAsBytes(await pdf.save());
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('PDF সংরক্ষণ হয়েছে: ${output.path}')),
+        SnackBar(content: Text('${strings.exportedPdf} ${output.path}')),
       );
     }
   }
@@ -901,148 +945,152 @@ class _HomeTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final english = _PathokLocale.of(context);
-    return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Row(
-            children: [
-              const _BrandMark(size: 48),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      english ? 'Welcome!' : 'শুভেচ্ছা!',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    Text(
-                      english
-                          ? 'Ready to listen to your documents?'
-                          : 'আপনার নথি শুনতে প্রস্তুত?',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+    return _ResponsiveContent(
+      child: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            Row(
+              children: [
+                const _BrandMark(size: 48),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        english ? 'Welcome!' : 'শুভেচ্ছা!',
+                        style: Theme.of(context).textTheme.headlineSmall,
                       ),
-                    ),
-                  ],
+                      Text(
+                        english
+                            ? 'Ready to listen to your documents?'
+                            : 'আপনার নথি শুনতে প্রস্তুত?',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 28),
-          Text(
-            english ? 'Add a new document' : 'নতুন নথি যোগ করুন',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 12),
-          _ActionCard(
-            icon: PathokIcons.camera,
-            title: english ? 'Scan with camera' : 'ক্যামেরা দিয়ে স্ক্যান করুন',
-            subtitle: english
-                ? 'Take a photo of a printed document'
-                : 'ছাপা নথির ছবি তুলুন',
-            onPressed: onCapture,
-          ),
-          const SizedBox(height: 12),
-          _ActionCard(
-            icon: PathokIcons.fileInvoice,
-            title: english ? 'Choose a PDF' : 'PDF বেছে নিন',
-            subtitle: english
-                ? 'Select a PDF from your device'
-                : 'ডিভাইস থেকে একটি PDF নিন',
-            onPressed: onImportPdf,
-          ),
-          const SizedBox(height: 12),
-          _ActionCard(
-            icon: PathokIcons.photo,
-            title: english ? 'Choose an image' : 'ছবি বেছে নিন',
-            subtitle: english
-                ? 'Select an image from your gallery'
-                : 'গ্যালারি থেকে একটি ছবি নিন',
-            onPressed: onImport,
-          ),
-          const SizedBox(height: 28),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                english ? 'Recent documents' : 'সাম্প্রতিক নথি',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              if (documents.isNotEmpty)
+              ],
+            ),
+            const SizedBox(height: 28),
+            Text(
+              english ? 'Add a new document' : 'নতুন নথি যোগ করুন',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 12),
+            _ActionCard(
+              icon: PathokIcons.camera,
+              title: english
+                  ? 'Scan with camera'
+                  : 'ক্যামেরা দিয়ে স্ক্যান করুন',
+              subtitle: english
+                  ? 'Take a photo of a printed document'
+                  : 'ছাপা নথির ছবি তুলুন',
+              onPressed: onCapture,
+            ),
+            const SizedBox(height: 12),
+            _ActionCard(
+              icon: PathokIcons.fileInvoice,
+              title: english ? 'Choose a PDF' : 'PDF বেছে নিন',
+              subtitle: english
+                  ? 'Select a PDF from your device'
+                  : 'ডিভাইস থেকে একটি PDF নিন',
+              onPressed: onImportPdf,
+            ),
+            const SizedBox(height: 12),
+            _ActionCard(
+              icon: PathokIcons.photo,
+              title: english ? 'Choose an image' : 'ছবি বেছে নিন',
+              subtitle: english
+                  ? 'Select an image from your gallery'
+                  : 'গ্যালারি থেকে একটি ছবি নিন',
+              onPressed: onImport,
+            ),
+            const SizedBox(height: 28),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
                 Text(
-                  english
-                      ? '${documents.length} documents'
-                      : '${documents.length}টি নথি',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  english ? 'Recent documents' : 'সাম্প্রতিক নথি',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                if (documents.isNotEmpty)
+                  Text(
+                    english
+                        ? '${documents.length} documents'
+                        : '${documents.length}টি নথি',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (documents.isEmpty)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(22),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.description_outlined,
+                        size: 42,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        english
+                            ? 'No documents yet.\nChoose an option above to begin.'
+                            : 'এখনও কোনো নথি নেই।\nউপরের একটি অপশন দিয়ে শুরু করুন।',
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
                 ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (documents.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(22),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.description_outlined,
-                      size: 42,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      english
-                          ? 'No documents yet.\nChoose an option above to begin.'
-                          : 'এখনও কোনো নথি নেই।\nউপরের একটি অপশন দিয়ে শুরু করুন।',
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            ...documents
-                .take(3)
-                .map(
-                  (document) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Card(
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 4,
-                        ),
-                        leading: CircleAvatar(
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primaryContainer,
-                          child: Icon(
-                            document.fileType == 'pdf'
-                                ? Icons.picture_as_pdf_outlined
-                                : PathokIcons.fileText,
+              )
+            else
+              ...documents
+                  .take(3)
+                  .map(
+                    (document) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Card(
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 4,
                           ),
+                          leading: CircleAvatar(
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primaryContainer,
+                            child: Icon(
+                              document.fileType == 'pdf'
+                                  ? Icons.picture_as_pdf_outlined
+                                  : PathokIcons.fileText,
+                            ),
+                          ),
+                          title: Text(document.title),
+                          subtitle: Text(
+                            document.text.isEmpty
+                                ? (english
+                                      ? 'No text added'
+                                      : 'লেখা যোগ করা হয়নি')
+                                : (english
+                                      ? 'Text has been edited'
+                                      : 'লেখা সম্পাদনা করা হয়েছে'),
+                          ),
+                          trailing: const Icon(PathokIcons.chevronRight),
+                          onTap: () => onOpen(document),
                         ),
-                        title: Text(document.title),
-                        subtitle: Text(
-                          document.text.isEmpty
-                              ? (english
-                                    ? 'No text added'
-                                    : 'লেখা যোগ করা হয়নি')
-                              : (english
-                                    ? 'Text has been edited'
-                                    : 'লেখা সম্পাদনা করা হয়েছে'),
-                        ),
-                        trailing: const Icon(PathokIcons.chevronRight),
-                        onTap: () => onOpen(document),
                       ),
                     ),
                   ),
-                ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1209,7 +1257,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
       }
       return;
     }
-    await _tts.setLanguage('bn-BD');
+    await _tts.setLanguage(_PathokLocale.of(context) ? 'en-US' : 'bn-BD');
     await _tts.setSpeechRate(0.45);
     await _tts.speak(_controller.text);
     if (mounted) setState(() => _speaking = true);
@@ -1795,10 +1843,12 @@ class SettingsTab extends StatelessWidget {
               ],
             ),
           ),
-          const AboutListTile(
-            applicationName: 'পাঠক',
+          AboutListTile(
+            applicationName: english ? 'Pathok' : 'পাঠক',
             applicationVersion: '0.1.0',
-            applicationLegalese: 'Every document has a voice.',
+            applicationLegalese: english
+                ? 'Every document has a voice.'
+                : 'প্রতিটি নথির একটি কণ্ঠ আছে।',
           ),
         ],
       ),
