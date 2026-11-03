@@ -149,6 +149,11 @@ class PathokApp extends StatelessWidget {
         colorScheme: colorScheme,
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xfff6f8fc),
+        textTheme: Typography.material2021().black.apply(
+          bodyColor: const Color(0xff17233b),
+          displayColor: const Color(0xff17233b),
+        ),
+        visualDensity: VisualDensity.standard,
         appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xfff6f8fc),
           surfaceTintColor: Colors.transparent,
@@ -162,6 +167,12 @@ class PathokApp extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: const BorderSide(color: Color(0xffe6ebf2)),
+          ),
+        ),
+        snackBarTheme: SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
           ),
         ),
         dialogTheme: DialogThemeData(
@@ -255,7 +266,9 @@ class _AppRootState extends State<AppRoot> {
   @override
   Widget build(BuildContext context) {
     final child = _onboardingComplete == null
-        ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+        ? _PathokLoading(
+            message: _english ? 'Loading Pathok...' : 'পাঠক লোড হচ্ছে...',
+          )
         : _locked
         ? LockScreen(onUnlock: _loadPreference)
         : _onboardingComplete!
@@ -294,6 +307,32 @@ class PathokStrings {
 
   static PathokStrings of(BuildContext context) =>
       PathokStrings(_PathokLocale.of(context));
+}
+
+class _PathokLoading extends StatelessWidget {
+  const _PathokLoading({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Semantics(
+          liveRegion: true,
+          label: message,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(message, style: Theme.of(context).textTheme.bodyLarge),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _BrandMark extends StatelessWidget {
@@ -445,7 +484,10 @@ class OnboardingScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(12),
                   child: Text(
                     english ? 'Get started' : 'শুরু করুন',
-                    style: const TextStyle(fontSize: 18),
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
@@ -564,7 +606,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      final english = _PathokLocale.of(context);
+      return _PathokLoading(
+        message: english ? 'Loading documents...' : 'নথি লোড হচ্ছে...',
+      );
     }
     final pages = [
       _HomeTab(
@@ -1111,38 +1156,45 @@ class _ActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(14),
+    return Semantics(
+      button: true,
+      label: '$title. $subtitle',
+      child: Card(
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 30,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
-                child: Icon(
-                  icon,
-                  size: 30,
-                  color: Theme.of(context).colorScheme.primary,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      Text(subtitle),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: Theme.of(context).textTheme.titleMedium),
-                    Text(subtitle),
-                  ],
-                ),
-              ),
-              const Icon(PathokIcons.chevronRight),
-            ],
+                const Icon(PathokIcons.chevronRight),
+              ],
+            ),
           ),
         ),
       ),
@@ -1379,129 +1431,138 @@ class _DocumentScreenState extends State<DocumentScreen> {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          if (widget.document.fileType == 'image' &&
-              File(widget.document.sourcePath).existsSync())
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.file(
-                File(widget.document.sourcePath),
-                height: 220,
-                fit: BoxFit.cover,
+      body: _ResponsiveContent(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            if (widget.document.fileType == 'image' &&
+                File(widget.document.sourcePath).existsSync())
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.file(
+                  File(widget.document.sourcePath),
+                  height: 220,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            if (widget.document.fileType == 'pdf')
+              Card(
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(16),
+                  leading: Icon(
+                    Icons.picture_as_pdf_outlined,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  title: Text(
+                    english ? 'PDF imported' : 'PDF নথি আমদানি হয়েছে',
+                  ),
+                  subtitle: Text(
+                    english
+                        ? 'PDF text will be processed during the OCR step.'
+                        : 'PDF-এর লেখা OCR ধাপে প্রক্রিয়া করা হবে।',
+                  ),
+                ),
+              ),
+            const SizedBox(height: 16),
+            Text(
+              english ? 'Recognized text' : 'স্বীকৃত লেখা',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              english
+                  ? 'Recognize text on this device. Review and edit the result.'
+                  : 'ছবির লেখা ডিভাইসেই শনাক্ত করুন। ফলাফল অবশ্যই যাচাই করে সম্পাদনা করুন।',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
-          if (widget.document.fileType == 'pdf')
             Card(
+              color: Theme.of(context).colorScheme.secondaryContainer,
               child: ListTile(
-                contentPadding: const EdgeInsets.all(16),
-                leading: Icon(
-                  Icons.picture_as_pdf_outlined,
-                  color: Theme.of(context).colorScheme.primary,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
                 ),
-                title: Text(english ? 'PDF imported' : 'PDF নথি আমদানি হয়েছে'),
+                leading: Icon(Icons.offline_bolt_outlined),
+                title: Text(
+                  english
+                      ? 'Offline Bangla + English OCR'
+                      : 'Offline বাংলা + English OCR',
+                ),
                 subtitle: Text(
                   english
-                      ? 'PDF text will be processed during the OCR step.'
-                      : 'PDF-এর লেখা OCR ধাপে প্রক্রিয়া করা হবে।',
+                      ? 'Clear, straight images produce better results.'
+                      : 'ছবি পরিষ্কার ও সোজা রাখলে ফলাফল ভালো হবে।',
                 ),
               ),
             ),
-          const SizedBox(height: 16),
-          Text(
-            english ? 'Recognized text' : 'স্বীকৃত লেখা',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            english
-                ? 'Recognize text on this device. Review and edit the result.'
-                : 'ছবির লেখা ডিভাইসেই শনাক্ত করুন। ফলাফল অবশ্যই যাচাই করে সম্পাদনা করুন।',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-          Card(
-            color: Theme.of(context).colorScheme.secondaryContainer,
-            child: ListTile(
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              leading: Icon(Icons.offline_bolt_outlined),
-              title: Text(
-                english
-                    ? 'Offline Bangla + English OCR'
-                    : 'Offline বাংলা + English OCR',
-              ),
-              subtitle: Text(
-                english
-                    ? 'Clear, straight images produce better results.'
-                    : 'ছবি পরিষ্কার ও সোজা রাখলে ফলাফল ভালো হবে।',
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(4),
-              child: TextField(
-                controller: _controller,
-                minLines: 8,
-                maxLines: 16,
-                onChanged: (value) {
-                  widget.document.text = value;
-                  widget.onChanged();
-                  setState(() {});
-                },
-                decoration: InputDecoration(
-                  hintText: english
-                      ? 'Enter document text here...'
-                      : 'এখানে নথির লেখা লিখুন...',
-                  border: InputBorder.none,
-                  filled: false,
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: TextField(
+                  controller: _controller,
+                  minLines: 8,
+                  maxLines: 16,
+                  onChanged: (value) {
+                    widget.document.text = value;
+                    widget.onChanged();
+                    setState(() {});
+                  },
+                  decoration: InputDecoration(
+                    hintText: english
+                        ? 'Enter document text here...'
+                        : 'এখানে নথির লেখা লিখুন...',
+                    border: InputBorder.none,
+                    filled: false,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          if (widget.document.fileType == 'image')
+            const SizedBox(height: 16),
+            if (widget.document.fileType == 'image')
+              OutlinedButton.icon(
+                onPressed: _recognizing ? null : _recognizeText,
+                icon: _recognizing
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(PathokIcons.scan),
+                label: Text(
+                  _recognizing
+                      ? (english
+                            ? 'Recognizing text...'
+                            : 'লেখা শনাক্ত হচ্ছে...')
+                      : (english ? 'Run offline OCR' : 'অফলাইন OCR চালান'),
+                ),
+              ),
+            const SizedBox(height: 8),
             OutlinedButton.icon(
-              onPressed: _recognizing ? null : _recognizeText,
-              icon: _recognizing
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(PathokIcons.scan),
+              onPressed: _controller.text.trim().isEmpty
+                  ? null
+                  : _showPrescriptionCandidates,
+              icon: const Icon(PathokIcons.pill),
               label: Text(
-                _recognizing
-                    ? (english ? 'Recognizing text...' : 'লেখা শনাক্ত হচ্ছে...')
-                    : (english ? 'Run offline OCR' : 'অফলাইন OCR চালান'),
+                english ? 'Prescription assistance' : 'প্রেসক্রিপশন সহায়তা',
               ),
             ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: _controller.text.trim().isEmpty
-                ? null
-                : _showPrescriptionCandidates,
-            icon: const Icon(PathokIcons.pill),
-            label: Text(
-              english ? 'Prescription assistance' : 'প্রেসক্রিপশন সহায়তা',
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: _toggleSpeech,
+              icon: Icon(_speaking ? PathokIcons.stop : PathokIcons.volume),
+              label: Text(
+                _speaking
+                    ? (english ? 'Stop' : 'থামুন')
+                    : (english ? 'Listen to text' : 'লেখা শুনুন'),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          FilledButton.icon(
-            onPressed: _toggleSpeech,
-            icon: Icon(_speaking ? PathokIcons.stop : PathokIcons.volume),
-            label: Text(
-              _speaking
-                  ? (english ? 'Stop' : 'থামুন')
-                  : (english ? 'Listen to text' : 'লেখা শুনুন'),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1581,100 +1642,102 @@ class _SearchableHistoryState extends State<_SearchableHistory> {
           document.title.toLowerCase().contains(query) ||
           document.text.toLowerCase().contains(query);
     }).toList();
-    return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Row(
-            children: [
-              Text(
-                english ? 'Documents' : 'নথি',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const Spacer(),
-              Text(
-                english
-                    ? '${widget.documents.length}'
-                    : '${widget.documents.length}টি',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+    return _ResponsiveContent(
+      child: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            Row(
+              children: [
+                Text(
+                  english ? 'Documents' : 'নথি',
+                  style: Theme.of(context).textTheme.headlineMedium,
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            onChanged: (value) => setState(() => _query = value),
-            decoration: InputDecoration(
-              prefixIcon: const Icon(Icons.search),
-              labelText: english ? 'Search documents' : 'নথি খুঁজুন',
+                const Spacer(),
+                Text(
+                  english
+                      ? '${widget.documents.length}'
+                      : '${widget.documents.length}টি',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 12),
-          if (filtered.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  children: [
-                    const Icon(Icons.search_off, size: 42),
-                    const SizedBox(height: 10),
-                    Text(
-                      _query.trim().isEmpty
-                          ? (english
-                                ? 'Your saved documents will appear here.'
-                                : 'আপনার সংরক্ষিত নথি এখানে দেখা যাবে।')
-                          : (english
-                                ? 'No documents match this search.'
-                                : 'এই খোঁজের সঙ্গে কোনো নথি মেলেনি।'),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
+            const SizedBox(height: 12),
+            TextField(
+              onChanged: (value) => setState(() => _query = value),
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search),
+                labelText: english ? 'Search documents' : 'নথি খুঁজুন',
               ),
-            )
-          else
-            ...filtered.map(
-              (document) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Card(
-                  child: ListTile(
-                    leading: Icon(
-                      document.fileType == 'pdf'
-                          ? Icons.picture_as_pdf_outlined
-                          : PathokIcons.fileText,
-                      color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 12),
+            if (filtered.isEmpty)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.search_off, size: 42),
+                      const SizedBox(height: 10),
+                      Text(
+                        _query.trim().isEmpty
+                            ? (english
+                                  ? 'Your saved documents will appear here.'
+                                  : 'আপনার সংরক্ষিত নথি এখানে দেখা যাবে।')
+                            : (english
+                                  ? 'No documents match this search.'
+                                  : 'এই খোঁজের সঙ্গে কোনো নথি মেলেনি।'),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              ...filtered.map(
+                (document) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Card(
+                    child: ListTile(
+                      leading: Icon(
+                        document.fileType == 'pdf'
+                            ? Icons.picture_as_pdf_outlined
+                            : PathokIcons.fileText,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      title: Text(document.title),
+                      subtitle: Text(
+                        document.text.isEmpty
+                            ? (english ? 'Empty text' : 'খালি লেখা')
+                            : document.text,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (value) {
+                          if (value == 'rename') widget.onRename(document);
+                          if (value == 'delete') widget.onDelete(document);
+                        },
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: 'rename',
+                            child: Text(english ? 'Rename' : 'নাম পরিবর্তন'),
+                          ),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Text(english ? 'Delete' : 'মুছুন'),
+                          ),
+                        ],
+                      ),
+                      onTap: () => widget.onOpen(document),
                     ),
-                    title: Text(document.title),
-                    subtitle: Text(
-                      document.text.isEmpty
-                          ? (english ? 'Empty text' : 'খালি লেখা')
-                          : document.text,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (value) {
-                        if (value == 'rename') widget.onRename(document);
-                        if (value == 'delete') widget.onDelete(document);
-                      },
-                      itemBuilder: (context) => [
-                        PopupMenuItem(
-                          value: 'rename',
-                          child: Text(english ? 'Rename' : 'নাম পরিবর্তন'),
-                        ),
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Text(english ? 'Delete' : 'মুছুন'),
-                        ),
-                      ],
-                    ),
-                    onTap: () => widget.onOpen(document),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

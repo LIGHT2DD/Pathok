@@ -19,6 +19,9 @@ The initial Flutter foundation includes:
   larger screens.
 - Settings sections are fully localized, including preferences, reminders,
   privacy, accessibility, backup, and About content.
+- UI polish includes theme-based typography, contextual loading states,
+  responsive content widths, floating snackbars, shared dialog styling, and
+  semantic action labels.
 - Camera capture and gallery image import through the native Android picker.
 - App-private persistent document metadata and source-file copies.
 - PDF import and text PDF export.
