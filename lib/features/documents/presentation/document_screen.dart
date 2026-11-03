@@ -46,6 +46,9 @@ class _DocumentScreenState extends State<DocumentScreen> {
   final PrescriptionService _prescriptionService = PrescriptionService();
 
   bool _speaking = false;
+  bool _paused = false;
+  int _lastWordStart = 0;
+  int _utteranceOffset = 0;
   bool _processing = false;
   String _speechLang = 'bn-BD';
   bool _userSelectedLanguage = false;
@@ -80,24 +83,56 @@ class _DocumentScreenState extends State<DocumentScreen> {
 
   void _initTts() {
     _tts.setStartHandler(() {
-      if (mounted) setState(() => _speaking = true);
-    });
-    _tts.setCompletionHandler(() {
-      _karaokeWordRange.value = null;
-      if (mounted) setState(() => _speaking = false);
-    });
-    _tts.setErrorHandler((dynamic msg) {
-      _karaokeWordRange.value = null;
-      if (mounted) setState(() => _speaking = false);
-    });
-    _tts.setCancelHandler(() {
-      _karaokeWordRange.value = null;
-      if (mounted) setState(() => _speaking = false);
+      if (mounted) {
+        setState(() {
+          _speaking = true;
+          _paused = false;
+        });
+      }
     });
 
-    // High performance localized progress tracking: updates only the reader widget without triggering full screen setState
+    _tts.setCompletionHandler(() {
+      if (mounted) {
+        setState(() {
+          _speaking = false;
+          _paused = false;
+          _lastWordStart = 0;
+          _utteranceOffset = 0;
+        });
+      }
+      _karaokeWordRange.value = null;
+    });
+
+    _tts.setErrorHandler((dynamic msg) {
+      if (!_paused) {
+        _karaokeWordRange.value = null;
+        if (mounted) {
+          setState(() {
+            _speaking = false;
+            _paused = false;
+          });
+        }
+      }
+    });
+
+    _tts.setCancelHandler(() {
+      if (!_paused) {
+        _karaokeWordRange.value = null;
+        if (mounted) {
+          setState(() {
+            _speaking = false;
+            _paused = false;
+          });
+        }
+      }
+    });
+
+    // High performance localized progress tracking with absolute document offsets
     _tts.setProgressHandler((String text, int startOffset, int endOffset, String word) {
-      _karaokeWordRange.value = TextRange(start: startOffset, end: endOffset);
+      final absoluteStart = _utteranceOffset + startOffset;
+      final absoluteEnd = _utteranceOffset + endOffset;
+      _lastWordStart = absoluteStart;
+      _karaokeWordRange.value = TextRange(start: absoluteStart, end: absoluteEnd);
     });
 
     _tts.awaitSpeakCompletion(true);
@@ -297,13 +332,64 @@ class _DocumentScreenState extends State<DocumentScreen> {
     }
   }
 
+  Future<void> _pauseSpeech() async {
+    setState(() {
+      _speaking = false;
+      _paused = true;
+    });
+    await _tts.stop();
+  }
+
+  Future<void> _stopSpeech() async {
+    await _tts.stop();
+    if (mounted) {
+      setState(() {
+        _speaking = false;
+        _paused = false;
+        _lastWordStart = 0;
+        _utteranceOffset = 0;
+      });
+    }
+    _karaokeWordRange.value = null;
+  }
+
+  Future<void> _resumeSpeech() async {
+    final text = _controller.text;
+    if (text.isEmpty) return;
+
+    // Sentence boundary detection for natural audio continuation:
+    // If paused mid-sentence, resume from the start of that sentence so words are never cut in half
+    int sentenceStart = _lastWordStart;
+    if (sentenceStart > 0 && sentenceStart < text.length) {
+      final terminators = RegExp(r'[।\n.!?]');
+      final textBefore = text.substring(0, sentenceStart);
+      final matches = terminators.allMatches(textBefore).toList();
+      if (matches.isNotEmpty) {
+        sentenceStart = matches.last.end;
+        while (sentenceStart < text.length && text[sentenceStart].trim().isEmpty) {
+          sentenceStart++;
+        }
+      } else {
+        sentenceStart = 0;
+      }
+    } else {
+      sentenceStart = 0;
+    }
+
+    _utteranceOffset = sentenceStart;
+    await _speakFromOffset(sentenceStart);
+  }
+
   Future<void> _toggleSpeech() async {
     final strings = AppStrings.of(context);
 
     if (_speaking) {
-      await _tts.stop();
-      _karaokeWordRange.value = null;
-      if (mounted) setState(() => _speaking = false);
+      await _pauseSpeech();
+      return;
+    }
+
+    if (_paused) {
+      await _resumeSpeech();
       return;
     }
 
@@ -317,12 +403,23 @@ class _DocumentScreenState extends State<DocumentScreen> {
       return;
     }
 
-    await _speakCurrentText();
+    _lastWordStart = 0;
+    _utteranceOffset = 0;
+    await _speakFromOffset(0);
   }
 
-  Future<void> _speakCurrentText() async {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
+  Future<void> _speakFromOffset(int offset) async {
+    final fullText = _controller.text;
+    if (offset >= fullText.length) {
+      await _stopSpeech();
+      return;
+    }
+
+    final textToSpeak = fullText.substring(offset).trim();
+    if (textToSpeak.isEmpty) {
+      await _stopSpeech();
+      return;
+    }
 
     final strings = AppStrings.of(context);
     String targetLang = _speechLang;
@@ -358,28 +455,38 @@ class _DocumentScreenState extends State<DocumentScreen> {
       await _tts.setVolume(1.0);
     } catch (_) {}
 
-    if (mounted) setState(() => _speaking = true);
+    if (mounted) {
+      setState(() {
+        _speaking = true;
+        _paused = false;
+      });
+    }
 
     // If text exceeds Android 4000 char utterance limit, split and speak safely
-    if (text.length > 3500) {
-      await _speakLongText(text);
+    if (textToSpeak.length > 3500) {
+      await _speakLongText(textToSpeak, offset);
     } else {
-      await _tts.speak(text);
+      await _tts.speak(textToSpeak);
     }
   }
 
-  Future<void> _speakLongText(String fullText) async {
+  Future<void> _speakLongText(String fullText, int baseOffset) async {
     final segments = fullText.split(RegExp(r'(?<=[।\n.!?])\s+'));
     final buffer = StringBuffer();
+    int currentOffset = baseOffset;
+
     for (final seg in segments) {
       if (!_speaking) break;
       if (buffer.length + seg.length > 3000) {
+        _utteranceOffset = currentOffset;
         await _tts.speak(buffer.toString());
+        currentOffset += buffer.length;
         buffer.clear();
       }
       buffer.write('$seg ');
     }
     if (_speaking && buffer.isNotEmpty) {
+      _utteranceOffset = currentOffset;
       await _tts.speak(buffer.toString());
     }
   }
@@ -393,7 +500,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
 
     if (_speaking) {
       _tts.stop().then((_) {
-        if (mounted) _speakCurrentText();
+        if (mounted) _speakFromOffset(_utteranceOffset);
       });
     }
   }
@@ -496,7 +603,9 @@ class _DocumentScreenState extends State<DocumentScreen> {
           TextSpan(
             text: highlighted,
             style: TextStyle(
-              backgroundColor: isDark ? const Color(0xffb45309) : const Color(0xfffde047),
+              backgroundColor: _paused
+                  ? (isDark ? const Color(0xffd97706) : const Color(0xfffef08a))
+                  : (isDark ? const Color(0xffb45309) : const Color(0xfffde047)),
               color: isDark ? Colors.white : const Color(0xff78350f),
               fontWeight: FontWeight.w900,
             ),
@@ -666,24 +775,24 @@ class _DocumentScreenState extends State<DocumentScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (_speaking) ...[
+                            if (_speaking || _paused) ...[
                               Row(
                                 children: [
                                   Container(
                                     width: 8,
                                     height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xff10b981),
+                                    decoration: BoxDecoration(
+                                      color: _speaking ? const Color(0xff10b981) : const Color(0xfff59e0b),
                                       shape: BoxShape.circle,
                                     ),
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    strings.liveReader,
+                                    _speaking ? strings.liveReader : strings.pausedAudio,
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
-                                      color: theme.colorScheme.primary,
+                                      color: _speaking ? theme.colorScheme.primary : const Color(0xffd97706),
                                     ),
                                   ),
                                 ],
@@ -746,23 +855,55 @@ class _DocumentScreenState extends State<DocumentScreen> {
                   top: false,
                   child: Row(
                     children: [
-                      // Play / Stop Icon Button
+                      // Play / Pause / Resume Button
                       Container(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: _speaking ? const Color(0xffef4444) : theme.colorScheme.primary,
+                          color: _speaking
+                              ? const Color(0xfff59e0b) // Amber for Pause
+                              : (_paused
+                                  ? const Color(0xff10b981) // Emerald for Resume
+                                  : theme.colorScheme.primary), // Blue for Play
                         ),
                         child: IconButton(
                           iconSize: 26,
                           color: Colors.white,
-                          icon: Icon(_speaking ? PathokIcons.stop : PathokIcons.volume),
+                          tooltip: _speaking
+                              ? strings.pauseListening
+                              : (_paused ? strings.resumeListening : strings.listenToText),
+                          icon: Icon(
+                            _speaking
+                                ? Icons.pause_rounded
+                                : (_paused ? Icons.play_arrow_rounded : PathokIcons.volume),
+                          ),
                           onPressed: () {
                             HapticFeedback.mediumImpact();
                             _toggleSpeech();
                           },
                         ),
                       ),
-                      const SizedBox(width: 14),
+
+                      // Dedicated Stop / Reset Button (visible when audio is active or paused)
+                      if (_speaking || _paused) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isDark ? const Color(0xff374151) : const Color(0xfffee2e2),
+                          ),
+                          child: IconButton(
+                            iconSize: 22,
+                            tooltip: strings.stopListening,
+                            color: const Color(0xffef4444),
+                            icon: const Icon(Icons.stop_rounded),
+                            onPressed: () {
+                              HapticFeedback.lightImpact();
+                              _stopSpeech();
+                            },
+                          ),
+                        ),
+                      ],
+                      const SizedBox(width: 12),
 
                       // Player Title & Status
                       Expanded(
@@ -771,8 +912,16 @@ class _DocumentScreenState extends State<DocumentScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              _speaking ? strings.playingAudio : strings.listenToText,
-                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                              _speaking
+                                  ? strings.playingAudio
+                                  : (_paused ? strings.pausedAudio : strings.listenToText),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                                color: _paused
+                                    ? const Color(0xffd97706)
+                                    : (_speaking ? theme.colorScheme.primary : null),
+                              ),
                             ),
                             Text(
                               isBengaliSpeech ? 'বাংলা ভয়েস (Bangla)' : 'English Voice (ইংরেজি)',

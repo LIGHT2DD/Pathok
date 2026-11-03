@@ -72,6 +72,9 @@ class AppStrings {
   String get recognizing => isEnglish ? 'Recognizing text...' : 'লেখা শনাক্ত হচ্ছে...';
   String get extractingPdf => isEnglish ? 'Extracting PDF text...' : 'PDF লেখা বিশ্লেষণ হচ্ছে...';
   String get listenToText => isEnglish ? 'Listen to text' : 'লেখা শুনুন';
+  String get pauseListening => isEnglish ? 'Pause' : 'বিরতি';
+  String get resumeListening => isEnglish ? 'Resume' : 'পুনরায় শুনুন';
+  String get pausedAudio => isEnglish ? 'Audio paused' : 'ভয়েস স্থগিত আছে';
   String get stopListening => isEnglish ? 'Stop' : 'থামুন';
   String get prescriptionAssistance => isEnglish ? 'Prescription assistance' : 'প্রেসক্রিপশন সহায়তা';
   String get exportPdf => isEnglish ? 'Export as PDF' : 'PDF হিসেবে সংরক্ষণ';
