@@ -8,6 +8,7 @@ class TranslationService {
   }) : _modelManager = modelManager ?? OnDeviceTranslatorModelManager();
 
   final OnDeviceTranslatorModelManager _modelManager;
+  final Map<String, OnDeviceTranslator> _translatorPool = {};
 
   /// Check if the offline model for the given BCP-47 language tag is already cached
   Future<bool> isModelDownloaded(String bcpCode) async {
@@ -44,17 +45,19 @@ class TranslationService {
     // First attempt on-device Neural Machine Translation via ML Kit on supported platforms
     if (!kIsWeb) {
       try {
-        final translator = OnDeviceTranslator(
-          sourceLanguage: sourceLang,
-          targetLanguage: targetLang,
-        );
-        try {
-          final translated = await translator.translateText(trimmed);
-          if (translated.trim().isNotEmpty) {
-            return translated;
-          }
-        } finally {
-          await translator.close();
+        final poolKey = '${sourceLang.bcpCode}_${targetLang.bcpCode}';
+        var translator = _translatorPool[poolKey];
+        if (translator == null) {
+          translator = OnDeviceTranslator(
+            sourceLanguage: sourceLang,
+            targetLanguage: targetLang,
+          );
+          _translatorPool[poolKey] = translator;
+        }
+
+        final translated = await translator.translateText(trimmed);
+        if (translated.trim().isNotEmpty) {
+          return translated;
         }
       } catch (e) {
         debugPrint('ML Kit on-device translation failed or model missing: $e');
@@ -78,6 +81,22 @@ class TranslationService {
 
     throw StateError('অনুবাদ মডেল ডাউনলোড করা নেই। ইন্টারনেট সংযোগ চালু করে মডেল ডাউনলোড করুন।');
   }
+
+  /// Closes all active translator instances and frees native memory
+  Future<void> dispose() async {
+    for (final translator in _translatorPool.values) {
+      try {
+        await translator.close();
+      } catch (_) {}
+    }
+    _translatorPool.clear();
+  }
+}
+
+class _TranslationRule {
+  const _TranslationRule(this.pattern, this.replacement);
+  final RegExp pattern;
+  final String replacement;
 }
 
 /// Instant offline domain-specific translation engine for prescriptions,
@@ -98,6 +117,96 @@ class PrescriptionOfflineTranslator {
 
   static final RegExp _digitPattern = RegExp(r'[0-9]');
 
+  // 1. Pre-compiled multi-word expressions and phrases
+  static final List<_TranslationRule> _multiWordRules = [
+    _TranslationRule(RegExp(r'\bPatient Name\b', caseSensitive: false), 'রোগীর নাম'),
+    _TranslationRule(RegExp(r'\bDoctor Name\b', caseSensitive: false), 'চিকিৎসকের নাম'),
+    _TranslationRule(RegExp(r'\bTotal Amount\b', caseSensitive: false), 'মোট পরিমাণ'),
+    _TranslationRule(RegExp(r'\bDue Date\b', caseSensitive: false), 'পরিশোধের শেষ তারিখ'),
+    _TranslationRule(RegExp(r'\bwith water\b', caseSensitive: false), 'পানির সাথে'),
+    _TranslationRule(RegExp(r'\bafter meals?\b|\bpc\b', caseSensitive: false), 'খাবারের পর'),
+    _TranslationRule(RegExp(r'\bbefore meals?\b|\bac\b', caseSensitive: false), 'খাবারের পূর্বে'),
+    _TranslationRule(RegExp(r'\bempty stomach\b', caseSensitive: false), 'খালি পেটে'),
+    _TranslationRule(RegExp(r'\bbedtime\b|\bhs\b', caseSensitive: false), 'ঘুমানোর পূর্বে'),
+    _TranslationRule(RegExp(r'\bas needed\b|\bprn\b', caseSensitive: false), 'প্রয়োজন অনুযায়ী'),
+    _TranslationRule(RegExp(r'\bdo not stop\b', caseSensitive: false), 'বন্ধ করবেন না'),
+    _TranslationRule(RegExp(r'\bcontinue\b', caseSensitive: false), 'চালিয়ে যান'),
+  ];
+
+  // 2. Pre-compiled frequencies & dosages
+  static final List<_TranslationRule> _dosageRules = [
+    _TranslationRule(RegExp(r'\b1\s*\+\s*0\s*\+\s*1\b'), 'সকালে ১টি এবং রাতে ১টি'),
+    _TranslationRule(RegExp(r'\b1\s*\+\s*1\s*\+\s*1\b'), 'সকালে ১টি, দুপুরে ১টি এবং রাতে ১টি'),
+    _TranslationRule(RegExp(r'\b1\s*\+\s*0\s*\+\s*0\b'), 'সকালে ১টি'),
+    _TranslationRule(RegExp(r'\b0\s*\+\s*0\s*\+\s*1\b'), 'রাতে ১টি'),
+    _TranslationRule(RegExp(r'\b0\s*\+\s*1\s*\+\s*0\b'), 'দুপরে ১টি'),
+    _TranslationRule(RegExp(r'\b1\s*\+\s*1\s*\+\s*1\s*\+\s*1\b'), 'সকালে ১টি, দুপুরে ১টি, সন্ধ্যায় ১টি এবং রাতে ১টি'),
+    _TranslationRule(RegExp(r'\bdaily\b|\bod\b', caseSensitive: false), 'প্রতিদিন একবার'),
+    _TranslationRule(RegExp(r'\bbid\b|\bb\.i\.d\.?\b', caseSensitive: false), 'দিনে দুইবার'),
+    _TranslationRule(RegExp(r'\btid\b|\bt\.i\.d\.?\b', caseSensitive: false), 'দিনে তিনবার'),
+    _TranslationRule(RegExp(r'\bqid\b|\bq\.i\.d\.?\b', caseSensitive: false), 'দিনে চারবার'),
+  ];
+
+  // 3. Pre-compiled duration patterns
+  static final RegExp _daysPattern = RegExp(r'\bfor\s+(\d+)\s+days?\b', caseSensitive: false);
+  static final RegExp _weeksPattern = RegExp(r'\bfor\s+(\d+)\s+weeks?\b', caseSensitive: false);
+  static final RegExp _monthsPattern = RegExp(r'\bfor\s+(\d+)\s+months?\b', caseSensitive: false);
+
+  // 4. Pre-compiled units
+  static final RegExp _mgPattern = RegExp(r'(\d+)\s*mg\b', caseSensitive: false);
+  static final RegExp _mlPattern = RegExp(r'(\d+)\s*ml\b', caseSensitive: false);
+  static final RegExp _mcgPattern = RegExp(r'(\d+)\s*mcg\b', caseSensitive: false);
+
+  // 5. Pre-compiled forms of medicine
+  static final List<_TranslationRule> _formRules = [
+    _TranslationRule(RegExp(r'\bTab(?:let)?\.?\b', caseSensitive: false), 'ট্যাবলেট'),
+    _TranslationRule(RegExp(r'\bCap(?:sule)?\.?\b', caseSensitive: false), 'ক্যাপসুল'),
+    _TranslationRule(RegExp(r'\bSyr(?:up)?\.?\b', caseSensitive: false), 'সিরাপ'),
+    _TranslationRule(RegExp(r'\bInj(?:ection)?\.?\b', caseSensitive: false), 'ইনজেকশন'),
+    _TranslationRule(RegExp(r'\bDrop(?:s)?\.?\b', caseSensitive: false), 'ড্রপ'),
+    _TranslationRule(RegExp(r'\bOint(?:ment)?\.?\b', caseSensitive: false), 'মলম'),
+  ];
+
+  // 6. Pre-compiled single-word keywords
+  static final List<_TranslationRule> _keywordRules = [
+    _TranslationRule(RegExp(r'\bPrescription\b', caseSensitive: false), 'প্রেসক্রিপশন'),
+    _TranslationRule(RegExp(r'\bDoctor\b', caseSensitive: false), 'চিকিৎসক'),
+    _TranslationRule(RegExp(r'\bDate\b', caseSensitive: false), 'তারিখ'),
+    _TranslationRule(RegExp(r'\bAge\b', caseSensitive: false), 'বয়স'),
+    _TranslationRule(RegExp(r'\bDiagnosis\b', caseSensitive: false), 'রোগ নির্ণয়'),
+    _TranslationRule(RegExp(r'\bAdvice\b', caseSensitive: false), 'পরামর্শ'),
+    _TranslationRule(RegExp(r'\bInvestigation\b', caseSensitive: false), 'পরীক্ষা-নিরীক্ষা'),
+    _TranslationRule(RegExp(r'\bBill\b', caseSensitive: false), 'বিল'),
+    _TranslationRule(RegExp(r'\bAmount\b', caseSensitive: false), 'টাকা'),
+    _TranslationRule(RegExp(r'\bTotal\b', caseSensitive: false), 'মোট'),
+    _TranslationRule(RegExp(r'\bElectricity\b', caseSensitive: false), 'বিদ্যুৎ'),
+    _TranslationRule(RegExp(r'\bWater\b', caseSensitive: false), 'পানি'),
+    _TranslationRule(RegExp(r'\bGas\b', caseSensitive: false), 'গ্যাস'),
+    _TranslationRule(RegExp(r'\bPaid\b', caseSensitive: false), 'পরিশোধিত'),
+    _TranslationRule(RegExp(r'\bUnpaid\b', caseSensitive: false), 'বকেয়া'),
+    _TranslationRule(RegExp(r'\bReceipt\b', caseSensitive: false), 'রসিদ'),
+    _TranslationRule(RegExp(r'\bAccount\b', caseSensitive: false), 'হিসাব'),
+    _TranslationRule(RegExp(r'\bMeter\b', caseSensitive: false), 'মিটার'),
+    _TranslationRule(RegExp(r'\bChapter\b', caseSensitive: false), 'অধ্যায়'),
+    _TranslationRule(RegExp(r'\bPage\b', caseSensitive: false), 'পৃষ্ঠা'),
+    _TranslationRule(RegExp(r'\bQuestion\b', caseSensitive: false), 'প্রশ্ন'),
+    _TranslationRule(RegExp(r'\bAnswer\b', caseSensitive: false), 'উত্তর'),
+    _TranslationRule(RegExp(r'\bSubject\b', caseSensitive: false), 'বিষয়'),
+    _TranslationRule(RegExp(r'\bBook\b', caseSensitive: false), 'বই'),
+    _TranslationRule(RegExp(r'\bSummary\b', caseSensitive: false), 'সারসংক্ষেপ'),
+    _TranslationRule(RegExp(r'\bNote\b', caseSensitive: false), 'নোট'),
+    _TranslationRule(RegExp(r'\bNotice\b', caseSensitive: false), 'বিজ্ঞপ্তি'),
+    _TranslationRule(RegExp(r'\bExam(?:ination)?\b', caseSensitive: false), 'পরীক্ষা'),
+    _TranslationRule(RegExp(r'\bResult\b', caseSensitive: false), 'ফলাফল'),
+    _TranslationRule(RegExp(r'\bImportant\b', caseSensitive: false), 'গুরুত্বপূর্ণ'),
+    _TranslationRule(RegExp(r'\bEducation\b', caseSensitive: false), 'শিক্ষা'),
+    _TranslationRule(RegExp(r'\bStudent\b', caseSensitive: false), 'শিক্ষার্থী'),
+    _TranslationRule(RegExp(r'\bTeacher\b', caseSensitive: false), 'শিক্ষক'),
+    _TranslationRule(RegExp(r'\bSchool\b', caseSensitive: false), 'বিদ্যালয়'),
+    _TranslationRule(RegExp(r'\bCollege\b', caseSensitive: false), 'কলেজ'),
+    _TranslationRule(RegExp(r'\bUniversity\b', caseSensitive: false), 'বিশ্ববিদ্যালয়'),
+  ];
+
   static String toBengaliDigits(String input) {
     return input.replaceAllMapped(_digitPattern, (m) => _digitMap[m[0]] ?? m[0]!);
   }
@@ -106,176 +215,122 @@ class PrescriptionOfflineTranslator {
     var out = text;
 
     // 1. Multi-word expressions and phrases FIRST
-    out = out.replaceAll(RegExp(r'\bPatient Name\b', caseSensitive: false), 'রোগীর নাম');
-    out = out.replaceAll(RegExp(r'\bDoctor Name\b', caseSensitive: false), 'চিকিৎসকের নাম');
-    out = out.replaceAll(RegExp(r'\bTotal Amount\b', caseSensitive: false), 'মোট পরিমাণ');
-    out = out.replaceAll(RegExp(r'\bDue Date\b', caseSensitive: false), 'পরিশোধের শেষ তারিখ');
-    out = out.replaceAll(RegExp(r'\bwith water\b', caseSensitive: false), 'পানির সাথে');
-    out = out.replaceAll(RegExp(r'\bafter meals?\b|\bpc\b', caseSensitive: false), 'খাবারের পর');
-    out = out.replaceAll(RegExp(r'\bbefore meals?\b|\bac\b', caseSensitive: false), 'খাবারের পূর্বে');
-    out = out.replaceAll(RegExp(r'\bempty stomach\b', caseSensitive: false), 'খালি পেটে');
-    out = out.replaceAll(RegExp(r'\bbedtime\b|\bhs\b', caseSensitive: false), 'ঘুমানোর পূর্বে');
-    out = out.replaceAll(RegExp(r'\bas needed\b|\bprn\b', caseSensitive: false), 'প্রয়োজন অনুযায়ী');
-    out = out.replaceAll(RegExp(r'\bdo not stop\b', caseSensitive: false), 'বন্ধ করবেন না');
-    out = out.replaceAll(RegExp(r'\bcontinue\b', caseSensitive: false), 'চালিয়ে যান');
+    for (final rule in _multiWordRules) {
+      out = out.replaceAll(rule.pattern, rule.replacement);
+    }
 
     // 2. Common Frequencies & Dosage patterns
-    out = out.replaceAll(RegExp(r'\b1\s*\+\s*0\s*\+\s*1\b'), 'সকালে ১টি এবং রাতে ১টি');
-    out = out.replaceAll(RegExp(r'\b1\s*\+\s*1\s*\+\s*1\b'), 'সকালে ১টি, দুপুরে ১টি এবং রাতে ১টি');
-    out = out.replaceAll(RegExp(r'\b1\s*\+\s*0\s*\+\s*0\b'), 'সকালে ১টি');
-    out = out.replaceAll(RegExp(r'\b0\s*\+\s*0\s*\+\s*1\b'), 'রাতে ১টি');
-    out = out.replaceAll(RegExp(r'\b0\s*\+\s*1\s*\+\s*0\b'), 'দুপরে ১টি');
-    out = out.replaceAll(RegExp(r'\b1\s*\+\s*1\s*\+\s*1\s*\+\s*1\b'), 'সকালে ১টি, দুপুরে ১টি, সন্ধ্যায় ১টি এবং রাতে ১টি');
-    out = out.replaceAll(RegExp(r'\bdaily\b|\bod\b', caseSensitive: false), 'প্রতিদিন একবার');
-    out = out.replaceAll(RegExp(r'\bbid\b|\bb\.i\.d\.?\b', caseSensitive: false), 'দিনে দুইবার');
-    out = out.replaceAll(RegExp(r'\btid\b|\bt\.i\.d\.?\b', caseSensitive: false), 'দিনে তিনবার');
-    out = out.replaceAll(RegExp(r'\bqid\b|\bq\.i\.d\.?\b', caseSensitive: false), 'দিনে চারবার');
+    for (final rule in _dosageRules) {
+      out = out.replaceAll(rule.pattern, rule.replacement);
+    }
 
     // 3. Duration patterns
-    out = out.replaceAllMapped(RegExp(r'\bfor\s+(\d+)\s+days?\b', caseSensitive: false), (m) {
+    out = out.replaceAllMapped(_daysPattern, (m) {
       final days = toBengaliDigits(m[1] ?? '১');
       return '$days দিনের জন্য';
     });
-    out = out.replaceAllMapped(RegExp(r'\bfor\s+(\d+)\s+weeks?\b', caseSensitive: false), (m) {
+    out = out.replaceAllMapped(_weeksPattern, (m) {
       final weeks = toBengaliDigits(m[1] ?? '১');
       return '$weeks সপ্তাহের জন্য';
     });
-    out = out.replaceAllMapped(RegExp(r'\bfor\s+(\d+)\s+months?\b', caseSensitive: false), (m) {
+    out = out.replaceAllMapped(_monthsPattern, (m) {
       final months = toBengaliDigits(m[1] ?? '১');
       return '$months মাসের জন্য';
     });
 
     // 4. Units
-    out = out.replaceAllMapped(RegExp(r'(\d+)\s*mg\b', caseSensitive: false), (m) {
+    out = out.replaceAllMapped(_mgPattern, (m) {
       return '${toBengaliDigits(m[1] ?? "")} মি.গ্রা.';
     });
-    out = out.replaceAllMapped(RegExp(r'(\d+)\s*ml\b', caseSensitive: false), (m) {
+    out = out.replaceAllMapped(_mlPattern, (m) {
       return '${toBengaliDigits(m[1] ?? "")} মি.লি.';
     });
-    out = out.replaceAllMapped(RegExp(r'(\d+)\s*mcg\b', caseSensitive: false), (m) {
+    out = out.replaceAllMapped(_mcgPattern, (m) {
       return '${toBengaliDigits(m[1] ?? "")} মাইক্রোগ্রাম';
     });
 
     // 5. Forms of medicine
-    out = out.replaceAll(RegExp(r'\bTab(?:let)?\.?\b', caseSensitive: false), 'ট্যাবলেট');
-    out = out.replaceAll(RegExp(r'\bCap(?:sule)?\.?\b', caseSensitive: false), 'ক্যাপসুল');
-    out = out.replaceAll(RegExp(r'\bSyr(?:up)?\.?\b', caseSensitive: false), 'সিরাপ');
-    out = out.replaceAll(RegExp(r'\bInj(?:ection)?\.?\b', caseSensitive: false), 'ইনজেকশন');
-    out = out.replaceAll(RegExp(r'\bDrop(?:s)?\.?\b', caseSensitive: false), 'ড্রপ');
-    out = out.replaceAll(RegExp(r'\bOint(?:ment)?\.?\b', caseSensitive: false), 'মলম');
+    for (final rule in _formRules) {
+      out = out.replaceAll(rule.pattern, rule.replacement);
+    }
 
     // 6. Single-word Document Headers & Keywords
-    out = out.replaceAll(RegExp(r'\bPrescription\b', caseSensitive: false), 'প্রেসক্রিপশন');
-    out = out.replaceAll(RegExp(r'\bDoctor\b', caseSensitive: false), 'চিকিৎসক');
-    out = out.replaceAll(RegExp(r'\bDate\b', caseSensitive: false), 'তারিখ');
-    out = out.replaceAll(RegExp(r'\bAge\b', caseSensitive: false), 'বয়স');
-    out = out.replaceAll(RegExp(r'\bDiagnosis\b', caseSensitive: false), 'রোগ নির্ণয়');
-    out = out.replaceAll(RegExp(r'\bAdvice\b', caseSensitive: false), 'পরামর্শ');
-    out = out.replaceAll(RegExp(r'\bInvestigation\b', caseSensitive: false), 'পরীক্ষা-নিরীক্ষা');
-    out = out.replaceAll(RegExp(r'\bBill\b', caseSensitive: false), 'বিল');
-    out = out.replaceAll(RegExp(r'\bAmount\b', caseSensitive: false), 'টাকা');
-    out = out.replaceAll(RegExp(r'\bTotal\b', caseSensitive: false), 'মোট');
-    out = out.replaceAll(RegExp(r'\bElectricity\b', caseSensitive: false), 'বিদ্যুৎ');
-    out = out.replaceAll(RegExp(r'\bWater\b', caseSensitive: false), 'পানি');
-    out = out.replaceAll(RegExp(r'\bGas\b', caseSensitive: false), 'গ্যাস');
-    out = out.replaceAll(RegExp(r'\bPaid\b', caseSensitive: false), 'পরিশোধিত');
-    out = out.replaceAll(RegExp(r'\bUnpaid\b', caseSensitive: false), 'বকেয়া');
-    out = out.replaceAll(RegExp(r'\bReceipt\b', caseSensitive: false), 'রসিদ');
-    out = out.replaceAll(RegExp(r'\bAccount\b', caseSensitive: false), 'হিসাব');
-    out = out.replaceAll(RegExp(r'\bMeter\b', caseSensitive: false), 'মিটার');
-
-    // Study & Education terms
-    out = out.replaceAll(RegExp(r'\bChapter\b', caseSensitive: false), 'অধ্যায়');
-    out = out.replaceAll(RegExp(r'\bPage\b', caseSensitive: false), 'পৃষ্ঠা');
-    out = out.replaceAll(RegExp(r'\bQuestion\b', caseSensitive: false), 'প্রশ্ন');
-    out = out.replaceAll(RegExp(r'\bAnswer\b', caseSensitive: false), 'উত্তর');
-    out = out.replaceAll(RegExp(r'\bSubject\b', caseSensitive: false), 'বিষয়');
-    out = out.replaceAll(RegExp(r'\bBook\b', caseSensitive: false), 'বই');
-    out = out.replaceAll(RegExp(r'\bSummary\b', caseSensitive: false), 'সারসংক্ষেপ');
-    out = out.replaceAll(RegExp(r'\bNote\b', caseSensitive: false), 'নোট');
-    out = out.replaceAll(RegExp(r'\bNotice\b', caseSensitive: false), 'বিজ্ঞপ্তি');
-    out = out.replaceAll(RegExp(r'\bExam(?:ination)?\b', caseSensitive: false), 'পরীক্ষা');
-    out = out.replaceAll(RegExp(r'\bResult\b', caseSensitive: false), 'ফলাফল');
-    out = out.replaceAll(RegExp(r'\bImportant\b', caseSensitive: false), 'গুরুত্বপূর্ণ');
-    out = out.replaceAll(RegExp(r'\bEducation\b', caseSensitive: false), 'শিক্ষা');
-    out = out.replaceAll(RegExp(r'\bStudent\b', caseSensitive: false), 'শিক্ষার্থী');
-    out = out.replaceAll(RegExp(r'\bTeacher\b', caseSensitive: false), 'শিক্ষক');
-    out = out.replaceAll(RegExp(r'\bSchool\b', caseSensitive: false), 'বিদ্যালয়');
-    out = out.replaceAll(RegExp(r'\bCollege\b', caseSensitive: false), 'কলেজ');
-    out = out.replaceAll(RegExp(r'\bUniversity\b', caseSensitive: false), 'বিশ্ববিদ্যালয়');
+    for (final rule in _keywordRules) {
+      out = out.replaceAll(rule.pattern, rule.replacement);
+    }
 
     return out;
   }
 
+  // Pre-defined static pairs for Bengali to English translation
+  static const List<MapEntry<String, String>> _bnToEnPhrases = [
+    MapEntry('রোগীর নাম', 'Patient Name'),
+    MapEntry('চিকিৎসকের নাম', 'Doctor Name'),
+    MapEntry('মোট পরিমাণ', 'Total Amount'),
+    MapEntry('পরিশোধের শেষ তারিখ', 'Due Date'),
+    MapEntry('খাবারের পূর্বে', 'Before meals'),
+    MapEntry('খাবারের পর', 'After meals'),
+    MapEntry('খালি পেটে', 'Empty stomach'),
+    MapEntry('ঘুমানোর পূর্বে', 'Before bedtime'),
+    MapEntry('দিনে দুইবার', 'Twice daily (BID)'),
+    MapEntry('দিনে তিনবার', 'Three times daily (TID)'),
+    MapEntry('দিনে চারবার', 'Four times daily (QID)'),
+    MapEntry('প্রতিদিন একবার', 'Once daily'),
+    MapEntry('পানির সাথে', 'With water'),
+    MapEntry('চালিয়ে যান', 'Continue'),
+    MapEntry('বন্ধ করবেন না', 'Do not stop'),
+    MapEntry('প্রেসক্রিপশন', 'Prescription'),
+    MapEntry('চিকিৎসক', 'Doctor'),
+    MapEntry('তারিখ', 'Date'),
+    MapEntry('বয়স', 'Age'),
+    MapEntry('রোগ নির্ণয়', 'Diagnosis'),
+    MapEntry('পরামর্শ', 'Advice'),
+    MapEntry('পরীক্ষা-নিরীক্ষা', 'Investigation'),
+    MapEntry('বিল', 'Bill'),
+    MapEntry('টাকা', 'Amount'),
+    MapEntry('মোট', 'Total'),
+    MapEntry('বিদ্যুৎ', 'Electricity'),
+    MapEntry('পানি', 'Water'),
+    MapEntry('গ্যাস', 'Gas'),
+    MapEntry('বকেয়া', 'Unpaid'),
+    MapEntry('পরিশোধিত', 'Paid'),
+    MapEntry('রসিদ', 'Receipt'),
+    MapEntry('হিসাব', 'Account'),
+    MapEntry('মিটার', 'Meter'),
+    MapEntry('ট্যাবলেট', 'Tablet'),
+    MapEntry('ক্যাপসুল', 'Capsule'),
+    MapEntry('সিরাপ', 'Syrup'),
+    MapEntry('ইনজেকশন', 'Injection'),
+    MapEntry('ড্রপ', 'Drops'),
+    MapEntry('মলম', 'Ointment'),
+    MapEntry('ওষুধ', 'Medicine'),
+    MapEntry('রোগী', 'Patient'),
+    MapEntry('অধ্যায়', 'Chapter'),
+    MapEntry('পৃষ্ঠা', 'Page'),
+    MapEntry('প্রশ্ন', 'Question'),
+    MapEntry('উত্তর', 'Answer'),
+    MapEntry('বিষয়', 'Subject'),
+    MapEntry('বই', 'Book'),
+    MapEntry('সারসংক্ষেপ', 'Summary'),
+    MapEntry('নোট', 'Note'),
+    MapEntry('বিজ্ঞপ্তি', 'Notice'),
+    MapEntry('পরীক্ষা', 'Exam'),
+    MapEntry('ফলাফল', 'Result'),
+    MapEntry('গুরুত্বপূর্ণ', 'Important'),
+    MapEntry('শিক্ষা', 'Education'),
+    MapEntry('শিক্ষার্থী', 'Student'),
+    MapEntry('শিক্ষক', 'Teacher'),
+    MapEntry('বিদ্যালয়', 'School'),
+    MapEntry('কলেজ', 'College'),
+    MapEntry('বিশ্ববিদ্যালয়', 'University'),
+  ];
+
   /// Translates common Bengali document terms and phrases to English offline
   static String translateToEnglish(String text) {
     var out = text;
-
-    // Multi-word first
-    out = out.replaceAll('রোগীর নাম', 'Patient Name');
-    out = out.replaceAll('চিকিৎসকের নাম', 'Doctor Name');
-    out = out.replaceAll('মোট পরিমাণ', 'Total Amount');
-    out = out.replaceAll('পরিশোধের শেষ তারিখ', 'Due Date');
-    out = out.replaceAll('খাবারের পূর্বে', 'Before meals');
-    out = out.replaceAll('খাবারের পর', 'After meals');
-    out = out.replaceAll('খালি পেটে', 'Empty stomach');
-    out = out.replaceAll('ঘুমানোর পূর্বে', 'Before bedtime');
-    out = out.replaceAll('দিনে দুইবার', 'Twice daily (BID)');
-    out = out.replaceAll('দিনে তিনবার', 'Three times daily (TID)');
-    out = out.replaceAll('দিনে চারবার', 'Four times daily (QID)');
-    out = out.replaceAll('প্রতিদিন একবার', 'Once daily');
-    out = out.replaceAll('পানির সাথে', 'With water');
-    out = out.replaceAll('চালিয়ে যান', 'Continue');
-    out = out.replaceAll('বন্ধ করবেন না', 'Do not stop');
-
-    // Single words
-    out = out.replaceAll('প্রেসক্রিপশন', 'Prescription');
-    out = out.replaceAll('চিকিৎসক', 'Doctor');
-    out = out.replaceAll('তারিখ', 'Date');
-    out = out.replaceAll('বয়স', 'Age');
-    out = out.replaceAll('রোগ নির্ণয়', 'Diagnosis');
-    out = out.replaceAll('পরামর্শ', 'Advice');
-    out = out.replaceAll('পরীক্ষা-নিরীক্ষা', 'Investigation');
-    out = out.replaceAll('বিল', 'Bill');
-    out = out.replaceAll('টাকা', 'Amount');
-    out = out.replaceAll('মোট', 'Total');
-    out = out.replaceAll('বিদ্যুৎ', 'Electricity');
-    out = out.replaceAll('পানি', 'Water');
-    out = out.replaceAll('গ্যাস', 'Gas');
-    out = out.replaceAll('বকেয়া', 'Unpaid');
-    out = out.replaceAll('পরিশোধিত', 'Paid');
-    out = out.replaceAll('রসিদ', 'Receipt');
-    out = out.replaceAll('হিসাব', 'Account');
-    out = out.replaceAll('মিটার', 'Meter');
-
-    out = out.replaceAll('ট্যাবলেট', 'Tablet');
-    out = out.replaceAll('ক্যাপসুল', 'Capsule');
-    out = out.replaceAll('সিরাপ', 'Syrup');
-    out = out.replaceAll('ইনজেকশন', 'Injection');
-    out = out.replaceAll('ড্রপ', 'Drops');
-    out = out.replaceAll('মলম', 'Ointment');
-    out = out.replaceAll('ওষুধ', 'Medicine');
-    out = out.replaceAll('রোগী', 'Patient');
-
-    out = out.replaceAll('অধ্যায়', 'Chapter');
-    out = out.replaceAll('পৃষ্ঠা', 'Page');
-    out = out.replaceAll('প্রশ্ন', 'Question');
-    out = out.replaceAll('উত্তর', 'Answer');
-    out = out.replaceAll('বিষয়', 'Subject');
-    out = out.replaceAll('বই', 'Book');
-    out = out.replaceAll('সারসংক্ষেপ', 'Summary');
-    out = out.replaceAll('নোট', 'Note');
-    out = out.replaceAll('বিজ্ঞপ্তি', 'Notice');
-    out = out.replaceAll('পরীক্ষা', 'Exam');
-    out = out.replaceAll('ফলাফল', 'Result');
-    out = out.replaceAll('গুরুত্বপূর্ণ', 'Important');
-    out = out.replaceAll('শিক্ষা', 'Education');
-    out = out.replaceAll('শিক্ষার্থী', 'Student');
-    out = out.replaceAll('শিক্ষক', 'Teacher');
-    out = out.replaceAll('বিদ্যালয়', 'School');
-    out = out.replaceAll('কলেজ', 'College');
-    out = out.replaceAll('বিশ্ববিদ্যালয়', 'University');
-
+    for (final entry in _bnToEnPhrases) {
+      out = out.replaceAll(entry.key, entry.value);
+    }
     return out;
   }
 }

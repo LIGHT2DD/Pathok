@@ -48,6 +48,8 @@ class LanguageSegment {
 }
 
 class LanguageDetector {
+  static final RegExp _boundaryRegex = RegExp(r'([।\n.!?]+)');
+
   /// Analyzes script distribution and returns classification & confidence
   static LanguageDetectionResult detect(String text) {
     if (text.trim().isEmpty) {
@@ -143,8 +145,7 @@ class LanguageDetector {
     if (fullText.trim().isEmpty) return const [];
 
     // Split at sentence/line breaks: \n, ।, ., !, ?
-    final boundaryRegex = RegExp(r'([।\n.!?]+)');
-    final matches = boundaryRegex.allMatches(fullText).toList();
+    final matches = _boundaryRegex.allMatches(fullText).toList();
 
     final rawSegments = <LanguageSegment>[];
     int cursor = 0;

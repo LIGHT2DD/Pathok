@@ -28,6 +28,36 @@ class HistoryTab extends StatefulWidget {
 class _HistoryTabState extends State<HistoryTab> {
   String _query = '';
   String _activeFilter = 'all'; // 'all', 'prescription', 'bill', 'id_card', 'image', 'pdf'
+  List<LocalDocument> _filteredDocuments = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _updateFilteredList();
+  }
+
+  @override
+  void didUpdateWidget(covariant HistoryTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.documents != widget.documents) {
+      _updateFilteredList();
+    }
+  }
+
+  void _updateFilteredList() {
+    final query = _query.trim().toLowerCase();
+    _filteredDocuments = widget.documents.where((document) {
+      if (_activeFilter == 'image' && document.fileType != 'image') return false;
+      if (_activeFilter == 'pdf' && document.fileType != 'pdf') return false;
+      if (_activeFilter == 'prescription' && document.category != 'prescription') return false;
+      if (_activeFilter == 'bill' && document.category != 'bill') return false;
+      if (_activeFilter == 'id_card' && document.category != 'id_card') return false;
+
+      if (query.isEmpty) return true;
+      return document.title.toLowerCase().contains(query) ||
+          document.text.toLowerCase().contains(query);
+    }).toList();
+  }
 
   Widget _buildCategoryBadge(String category, AppStrings strings) {
     Color bg;
@@ -74,19 +104,7 @@ class _HistoryTabState extends State<HistoryTab> {
   Widget build(BuildContext context) {
     final strings = AppStrings.of(context);
     final theme = Theme.of(context);
-
-    final filtered = widget.documents.where((document) {
-      if (_activeFilter == 'image' && document.fileType != 'image') return false;
-      if (_activeFilter == 'pdf' && document.fileType != 'pdf') return false;
-      if (_activeFilter == 'prescription' && document.category != 'prescription') return false;
-      if (_activeFilter == 'bill' && document.category != 'bill') return false;
-      if (_activeFilter == 'id_card' && document.category != 'id_card') return false;
-
-      final query = _query.trim().toLowerCase();
-      if (query.isEmpty) return true;
-      return document.title.toLowerCase().contains(query) ||
-          document.text.toLowerCase().contains(query);
-    }).toList();
+    final filtered = _filteredDocuments;
 
     return Center(
       child: ConstrainedBox(
@@ -132,7 +150,10 @@ class _HistoryTabState extends State<HistoryTab> {
 
                       // Modern Floating Search Bar
                       TextField(
-                        onChanged: (value) => setState(() => _query = value),
+                        onChanged: (value) => setState(() {
+                          _query = value;
+                          _updateFilteredList();
+                        }),
                         decoration: InputDecoration(
                           prefixIcon: const Icon(Icons.search, size: 22),
                           hintText: strings.searchDocuments,
@@ -161,7 +182,10 @@ class _HistoryTabState extends State<HistoryTab> {
                           suffixIcon: _query.isNotEmpty
                               ? IconButton(
                                   icon: const Icon(Icons.clear, size: 20),
-                                  onPressed: () => setState(() => _query = ''),
+                                  onPressed: () => setState(() {
+                                    _query = '';
+                                    _updateFilteredList();
+                                  }),
                                 )
                               : null,
                         ),
@@ -178,7 +202,10 @@ class _HistoryTabState extends State<HistoryTab> {
                               label: Text(strings.filterAll),
                               onSelected: (_) {
                                 HapticFeedback.selectionClick();
-                                setState(() => _activeFilter = 'all');
+                                setState(() {
+                                  _activeFilter = 'all';
+                                  _updateFilteredList();
+                                });
                               },
                             ),
                             const SizedBox(width: 8),
@@ -188,7 +215,10 @@ class _HistoryTabState extends State<HistoryTab> {
                               label: Text(strings.categoryPrescriptions),
                               onSelected: (_) {
                                 HapticFeedback.selectionClick();
-                                setState(() => _activeFilter = 'prescription');
+                                setState(() {
+                                  _activeFilter = 'prescription';
+                                  _updateFilteredList();
+                                });
                               },
                             ),
                             const SizedBox(width: 8),
@@ -198,7 +228,10 @@ class _HistoryTabState extends State<HistoryTab> {
                               label: Text(strings.categoryBills),
                               onSelected: (_) {
                                 HapticFeedback.selectionClick();
-                                setState(() => _activeFilter = 'bill');
+                                setState(() {
+                                  _activeFilter = 'bill';
+                                  _updateFilteredList();
+                                });
                               },
                             ),
                             const SizedBox(width: 8),
@@ -208,7 +241,10 @@ class _HistoryTabState extends State<HistoryTab> {
                               label: Text(strings.categoryIdCards),
                               onSelected: (_) {
                                 HapticFeedback.selectionClick();
-                                setState(() => _activeFilter = 'id_card');
+                                setState(() {
+                                  _activeFilter = 'id_card';
+                                  _updateFilteredList();
+                                });
                               },
                             ),
                             const SizedBox(width: 8),
@@ -217,7 +253,10 @@ class _HistoryTabState extends State<HistoryTab> {
                               label: Text(strings.filterPhotos),
                               onSelected: (_) {
                                 HapticFeedback.selectionClick();
-                                setState(() => _activeFilter = 'image');
+                                setState(() {
+                                  _activeFilter = 'image';
+                                  _updateFilteredList();
+                                });
                               },
                             ),
                             const SizedBox(width: 8),
@@ -226,7 +265,10 @@ class _HistoryTabState extends State<HistoryTab> {
                               label: Text(strings.filterPdfs),
                               onSelected: (_) {
                                 HapticFeedback.selectionClick();
-                                setState(() => _activeFilter = 'pdf');
+                                setState(() {
+                                  _activeFilter = 'pdf';
+                                  _updateFilteredList();
+                                });
                               },
                             ),
                           ],

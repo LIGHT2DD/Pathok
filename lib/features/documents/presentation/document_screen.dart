@@ -177,6 +177,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
     _tts.stop();
     ReminderNotificationService.instance.cancelAudioPlaybackNotification();
     _ocrService.close();
+    unawaited(_translationService.dispose());
     super.dispose();
   }
 
