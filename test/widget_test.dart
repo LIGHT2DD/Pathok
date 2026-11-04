@@ -77,6 +77,8 @@ void main() {
     expect(find.text('ক্যামেরা দিয়ে স্ক্যান করুন'), findsOneWidget);
     expect(find.text('PDF বেছে নিন'), findsOneWidget);
     expect(find.text('ছবি বেছে নিন'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('মেডিকেল প্রেসক্রিপশন'), 100);
     expect(find.text('মেডিকেল প্রেসক্রিপশন'), findsOneWidget);
   });
 

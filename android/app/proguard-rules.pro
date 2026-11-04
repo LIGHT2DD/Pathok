@@ -29,3 +29,7 @@
 
 # Desugar JDK libraries
 -dontwarn java.lang.invoke.**
+
+# Google ML Kit Translation
+-keep class com.google.mlkit.nl.translate.** { *; }
+-dontwarn com.google.mlkit.nl.translate.**

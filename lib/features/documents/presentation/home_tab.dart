@@ -6,7 +6,7 @@ import '../../../core/localization/app_strings.dart';
 import '../../prescription/models/medicine_reminder.dart';
 import '../models/local_document.dart';
 
-class HomeTab extends StatelessWidget {
+class HomeTab extends StatefulWidget {
   const HomeTab({
     required this.documents,
     required this.onCapture,
@@ -28,6 +28,13 @@ class HomeTab extends StatelessWidget {
   final List<MedicineReminder>? reminders;
   final ValueChanged<MedicineReminder>? onToggleReminderTaken;
 
+  @override
+  State<HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<HomeTab> {
+  String? _selectedCategory;
+
   String _getTimeBasedGreeting(AppStrings strings) {
     final hour = DateTime.now().hour;
     if (hour < 12) return strings.greetingMorning;
@@ -41,6 +48,11 @@ class HomeTab extends StatelessWidget {
     String label;
 
     switch (category) {
+      case 'study':
+        bg = const Color(0xffeef2ff);
+        fg = const Color(0xff4f46e5);
+        label = strings.categoryStudy;
+        break;
       case 'prescription':
         bg = const Color(0xffecfdf5);
         fg = const Color(0xff059669);
@@ -82,7 +94,7 @@ class HomeTab extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final activeReminders = reminders ?? const [];
+    final activeReminders = widget.reminders ?? const [];
     final takenCount = activeReminders.where((r) => r.isTakenToday).length;
 
     return Center(
@@ -168,11 +180,12 @@ class HomeTab extends StatelessWidget {
 
               // Hero Quick-Scan Bento Card
               _HeroCameraBentoCard(
+                badge: strings.fastScanBadge,
                 title: strings.scanCamera,
                 subtitle: strings.scanCameraSubtitle,
                 onPressed: () {
                   HapticFeedback.lightImpact();
-                  onCapture();
+                  widget.onCapture();
                 },
               ),
               const SizedBox(height: 14),
@@ -189,7 +202,7 @@ class HomeTab extends StatelessWidget {
                       subtitle: strings.chooseImageSubtitle,
                       onPressed: () {
                         HapticFeedback.lightImpact();
-                        onImport();
+                        widget.onImport();
                       },
                     ),
                   ),
@@ -203,7 +216,127 @@ class HomeTab extends StatelessWidget {
                       subtitle: strings.choosePdfSubtitle,
                       onPressed: () {
                         HapticFeedback.lightImpact();
-                        onImportPdf();
+                        widget.onImportPdf();
+                      },
+                    ),
+                  ),
+                ],
+              ),
+
+              // Universal Multi-Generational Category Hubs (4 Hubs)
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    strings.categoryHubs,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  if (_selectedCategory != null)
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _selectedCategory = null);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withAlpha(20),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          children: [
+                            Text(
+                              strings.filterAll,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(Icons.close, size: 12, color: theme.colorScheme.primary),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: _CategoryHubCard(
+                      icon: Icons.menu_book_rounded,
+                      color: const Color(0xff4f46e5),
+                      bgColor: isDark ? const Color(0xff1e1b4b) : const Color(0xffeef2ff),
+                      title: strings.categoryStudy,
+                      subtitle: strings.categoryStudySubtitle,
+                      count: widget.documents.where((d) => d.category == 'study').length,
+                      isSelected: _selectedCategory == 'study',
+                      onTap: () {
+                        setState(() {
+                          _selectedCategory = (_selectedCategory == 'study') ? null : 'study';
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _CategoryHubCard(
+                      icon: Icons.receipt_long_rounded,
+                      color: const Color(0xffd97706),
+                      bgColor: isDark ? const Color(0xff451a03) : const Color(0xfffffbeb),
+                      title: strings.categoryBills,
+                      subtitle: strings.categoryBillsSubtitle,
+                      count: widget.documents.where((d) => d.category == 'bill').length,
+                      isSelected: _selectedCategory == 'bill',
+                      onTap: () {
+                        setState(() {
+                          _selectedCategory = (_selectedCategory == 'bill') ? null : 'bill';
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _CategoryHubCard(
+                      icon: PathokIcons.pill,
+                      color: const Color(0xff059669),
+                      bgColor: isDark ? const Color(0xff064e3b) : const Color(0xffecfdf5),
+                      title: strings.categoryPrescriptions,
+                      subtitle: strings.categoryPrescriptionsSubtitle,
+                      count: widget.documents.where((d) => d.category == 'prescription').length,
+                      isSelected: _selectedCategory == 'prescription',
+                      onTap: () {
+                        setState(() {
+                          _selectedCategory = (_selectedCategory == 'prescription') ? null : 'prescription';
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _CategoryHubCard(
+                      icon: Icons.description_outlined,
+                      color: const Color(0xff0284c7),
+                      bgColor: isDark ? const Color(0xff082f49) : const Color(0xfff0f9ff),
+                      title: strings.categoryGeneral,
+                      subtitle: strings.categoryGeneralSubtitle,
+                      count: widget.documents.where((d) => d.category == 'general' || d.category == 'id_card').length,
+                      isSelected: _selectedCategory == 'general',
+                      onTap: () {
+                        setState(() {
+                          _selectedCategory = (_selectedCategory == 'general') ? null : 'general';
+                        });
                       },
                     ),
                   ),
@@ -269,7 +402,7 @@ class HomeTab extends StatelessWidget {
                             ),
                             onPressed: () {
                               HapticFeedback.mediumImpact();
-                              onToggleReminderTaken?.call(reminder);
+                              widget.onToggleReminderTaken?.call(reminder);
                             },
                           ),
                           title: Text(
@@ -304,7 +437,7 @@ class HomeTab extends StatelessWidget {
                           ),
                           onTap: () {
                             HapticFeedback.lightImpact();
-                            onToggleReminderTaken?.call(reminder);
+                            widget.onToggleReminderTaken?.call(reminder);
                           },
                         );
                       }).toList(),
@@ -326,7 +459,7 @@ class HomeTab extends StatelessWidget {
                       letterSpacing: -0.2,
                     ),
                   ),
-                  if (documents.isNotEmpty)
+                  if (widget.documents.isNotEmpty)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
@@ -334,7 +467,13 @@ class HomeTab extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        strings.documentsCount(documents.length),
+                        strings.documentsCount(
+                          _selectedCategory == null
+                              ? widget.documents.length
+                              : widget.documents.where((d) => _selectedCategory == 'general'
+                                  ? (d.category == 'general' || d.category == 'id_card')
+                                  : d.category == _selectedCategory).length,
+                        ),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -346,7 +485,7 @@ class HomeTab extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              if (documents.isEmpty)
+              if (widget.documents.isEmpty)
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(32),
@@ -378,7 +517,13 @@ class HomeTab extends StatelessWidget {
                   ),
                 )
               else
-                ...documents.take(4).map(
+                ...(_selectedCategory == null
+                        ? widget.documents
+                        : widget.documents.where((d) => _selectedCategory == 'general'
+                            ? (d.category == 'general' || d.category == 'id_card')
+                            : d.category == _selectedCategory).toList())
+                    .take(5)
+                    .map(
                       (document) => Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: Card(
@@ -386,7 +531,7 @@ class HomeTab extends StatelessWidget {
                             borderRadius: BorderRadius.circular(24),
                             onTap: () {
                               HapticFeedback.selectionClick();
-                              onOpen(document);
+                              widget.onOpen(document);
                             },
                             child: Padding(
                               padding: const EdgeInsets.all(16),
@@ -398,22 +543,40 @@ class HomeTab extends StatelessWidget {
                                     decoration: BoxDecoration(
                                       color: document.fileType == 'pdf'
                                           ? const Color(0xffffe4e6)
-                                          : (document.category == 'prescription'
-                                              ? const Color(0xffecfdf5)
-                                              : theme.colorScheme.primary.withAlpha(25)),
+                                          : (document.category == 'study'
+                                              ? const Color(0xffeef2ff)
+                                              : (document.category == 'bill'
+                                                  ? const Color(0xfffffbeb)
+                                                  : (document.category == 'prescription'
+                                                      ? const Color(0xffecfdf5)
+                                                      : (document.category == 'id_card'
+                                                          ? const Color(0xfff5f3ff)
+                                                          : theme.colorScheme.primary.withAlpha(25))))),
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Icon(
                                       document.fileType == 'pdf'
                                           ? Icons.picture_as_pdf_outlined
-                                          : (document.category == 'prescription'
-                                              ? PathokIcons.pill
-                                              : PathokIcons.fileText),
+                                          : (document.category == 'study'
+                                              ? Icons.menu_book_rounded
+                                              : (document.category == 'bill'
+                                                  ? Icons.receipt_long_rounded
+                                                  : (document.category == 'prescription'
+                                                      ? PathokIcons.pill
+                                                      : (document.category == 'id_card'
+                                                          ? Icons.badge_outlined
+                                                          : PathokIcons.fileText)))),
                                       color: document.fileType == 'pdf'
                                           ? const Color(0xffe11d48)
-                                          : (document.category == 'prescription'
-                                              ? const Color(0xff059669)
-                                              : theme.colorScheme.primary),
+                                          : (document.category == 'study'
+                                              ? const Color(0xff4f46e5)
+                                              : (document.category == 'bill'
+                                                  ? const Color(0xffd97706)
+                                                  : (document.category == 'prescription'
+                                                      ? const Color(0xff059669)
+                                                      : (document.category == 'id_card'
+                                                          ? const Color(0xff7c3aed)
+                                                          : theme.colorScheme.primary)))),
                                       size: 24,
                                     ),
                                   ),
@@ -473,7 +636,7 @@ class HomeTab extends StatelessWidget {
                                     tooltip: strings.delete,
                                     onPressed: () {
                                       HapticFeedback.lightImpact();
-                                      onDelete(document);
+                                      widget.onDelete(document);
                                     },
                                   ),
                                   Icon(
@@ -496,13 +659,110 @@ class HomeTab extends StatelessWidget {
   }
 }
 
+class _CategoryHubCard extends StatelessWidget {
+  const _CategoryHubCard({
+    required this.icon,
+    required this.color,
+    required this.bgColor,
+    required this.title,
+    required this.subtitle,
+    required this.count,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color color;
+  final Color bgColor;
+  final String title;
+  final String subtitle;
+  final int count;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: isSelected ? 4 : 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: isSelected
+            ? BorderSide(color: color, width: 2)
+            : BorderSide.none,
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(icon, color: color, size: 20),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: isSelected ? color : color.withAlpha(25),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '$count',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: isSelected ? Colors.white : color,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _HeroCameraBentoCard extends StatelessWidget {
   const _HeroCameraBentoCard({
+    required this.badge,
     required this.title,
     required this.subtitle,
     required this.onPressed,
   });
 
+  final String badge;
   final String title;
   final String subtitle;
   final VoidCallback onPressed;
@@ -544,9 +804,9 @@ class _HeroCameraBentoCard extends StatelessWidget {
                           color: Colors.white.withAlpha(45),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Text(
-                          'FAST SCAN',
-                          style: TextStyle(
+                        child: Text(
+                          badge,
+                          style: const TextStyle(
                             fontSize: 10,
                             letterSpacing: 1.1,
                             fontWeight: FontWeight.w800,

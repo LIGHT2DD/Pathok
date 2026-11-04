@@ -7,7 +7,7 @@ class AppStrings {
 
   // General
   String get appName => isEnglish ? 'Pathok' : 'পাঠক';
-  String get tagline => isEnglish ? 'Every document has a voice.' : 'প্রতিটি নথির একটি কণ্ঠ আছে।';
+  String get tagline => isEnglish ? 'Your All-in-One AI Document Companion' : 'আপনার অল-ইন-ওয়ান এআই নথি ও পাঠ সহকারী';
   String get cancel => isEnglish ? 'Cancel' : 'বাতিল';
   String get save => isEnglish ? 'Save' : 'সংরক্ষণ';
   String get delete => isEnglish ? 'Delete' : 'মুছুন';
@@ -60,10 +60,17 @@ class AppStrings {
   String get filterAll => isEnglish ? 'All' : 'সব';
   String get filterPhotos => isEnglish ? 'Photos' : 'ছবি';
   String get filterPdfs => isEnglish ? 'PDFs' : 'PDF';
-  String get categoryPrescriptions => isEnglish ? 'Prescriptions' : 'প্রেসক্রিপশন';
-  String get categoryBills => isEnglish ? 'Bills & Receipts' : 'রসিদ ও বিল';
+  String get categoryStudy => isEnglish ? 'Study & Books' : 'পড়াশোনা ও বই';
+  String get categoryBills => isEnglish ? 'Bills & Finances' : 'বিল ও রসিদ';
+  String get categoryPrescriptions => isEnglish ? 'Prescriptions & Health' : 'প্রেসক্রিপশন ও স্বাস্থ্য';
+  String get categoryGeneral => isEnglish ? 'Notices & General' : 'সাধারণ নথি';
   String get categoryIdCards => isEnglish ? 'Cards & ID' : 'পরিচয়পত্র';
-  String get categoryGeneral => isEnglish ? 'Notes' : 'নোট';
+  String get categoryHubs => isEnglish ? 'Document Hubs' : 'ক্যাটাগরি হাব';
+  String get fastScanBadge => isEnglish ? 'FAST SCAN' : 'দ্রুত স্ক্যান';
+  String get categoryStudySubtitle => isEnglish ? 'Books & Study' : 'বই ও পড়াশোনা';
+  String get categoryBillsSubtitle => isEnglish ? 'Utilities & Receipts' : 'বিদ্যুৎ ও রসিদ';
+  String get categoryPrescriptionsSubtitle => isEnglish ? 'Medicines & Health' : 'ওষুধ ও প্রেসক্রিপশন';
+  String get categoryGeneralSubtitle => isEnglish ? 'Notes & Notices' : 'নোট ও নোটিশ';
   String get pinDocument => isEnglish ? 'Pin to top' : 'উপরে পিন করুন';
   String get unpinDocument => isEnglish ? 'Unpin' : 'পিন সরান';
   String get pinned => isEnglish ? 'Pinned' : 'পিন করা';
@@ -98,10 +105,43 @@ class AppStrings {
   String get ocrFailed => isEnglish ? 'OCR failed. Please try with a clearer photo.' : 'OCR ব্যর্থ হয়েছে। আরও স্পষ্ট ছবি দিয়ে চেষ্টা করুন।';
   String get noTextFoundInImage => isEnglish ? 'No readable text was detected.' : 'কোনো স্পষ্ট লেখা পাওয়া যায়নি।';
 
-  // TTS Language
+  // TTS Language & Translation
   String get speechLanguage => isEnglish ? 'Speech language' : 'পড়ার ভাষা';
-  String get speechBangla => isEnglish ? 'Bangla (বাংলা)' : 'বাংলা';
+  String get speechBangla => isEnglish ? 'Bangla' : 'বাংলা';
   String get speechEnglish => isEnglish ? 'English' : 'ইংরেজি';
+  String get languageDetected => isEnglish ? 'Detected language' : 'শনাক্ত ভাষা';
+  String get mixedLanguage => isEnglish ? 'Bilingual' : 'দ্বিভাষিক';
+  String languageRatio(int bnPct, int enPct) => isEnglish 
+      ? 'Bengali letters: $bnPct% | English letters: $enPct%' 
+      : 'বাংলা অক্ষর: $bnPct% | ইংরেজি অক্ষর: $enPct%';
+  String get bilingualVoiceSubtitle => isEnglish 
+      ? 'Switch naturally between Bengali and English voices' 
+      : 'ইংরেজি শব্দ ও বাংলা নির্দেশনা আলাদা স্বাভাবিক কণ্ঠে পড়ুন';
+  String get speechBanglaSubtitle => isEnglish 
+      ? 'Read all text in Bangla voice' 
+      : 'সব লেখা বাংলা ভয়েসে শুনুন';
+  String get speechEnglishSubtitle => isEnglish 
+      ? 'Read all text in English voice' 
+      : 'সব লেখা ইংরেজি ভয়েসে শুনুন';
+  String get originalText => isEnglish ? 'Original' : 'মূল পাঠ';
+  String get translatedText => isEnglish ? 'Translated' : 'অনুবাদ';
+  String get translate => isEnglish ? 'Translate' : 'অনুবাদ করুন';
+  String get translateToBangla => isEnglish ? 'Translate to Bangla' : 'বাংলায় অনুবাদ করুন';
+  String get translateToEnglish => isEnglish ? 'Translate to English' : 'ইংরেজিতে অনুবাদ করুন';
+  String get translating => isEnglish ? 'Translating text...' : 'অনুবাদ করা হচ্ছে...';
+  String get translationComplete => isEnglish ? 'Translation completed' : 'অনুবাদ সম্পন্ন হয়েছে';
+  String get translationFailed => isEnglish ? 'Translation failed' : 'অনুবাদ ব্যর্থ হয়েছে';
+  String get downloadingModel => isEnglish ? 'Downloading offline model (~25MB)...' : 'অফলাইন মডেল ডাউনলোড হচ্ছে (~২৫ মেগাবাইট)...';
+  String get instantTranslation => isEnglish ? 'Instant Offline Translation' : 'তাৎক্ষণিক অনুবাদ';
+  String get downloadModel => isEnglish ? 'Download Model' : 'মডেল ডাউনলোড';
+  String get downloadModelPromptEnToBn => isEnglish 
+      ? 'An on-device Google ML Kit model (~25MB) is available for neural translation.\n\nWould you like to download it now or use instant offline translation?'
+      : 'পূর্ণাঙ্গ অনুবাদের জন্য গুগল এমএল কিট অফলাইন মডেল (~২৫ মেগাবাইট) প্রয়োজন।\n\nআপনি কি এখন ডাউনলোড করবেন, নাকি তাৎক্ষণিক অফলাইন অনুবাদ ব্যবহার করবেন?';
+  String get downloadModelPromptBnToEn => isEnglish
+      ? 'Translate to English using the on-device ML model or instant offline translation.'
+      : 'ইংরেজি অনুবাদের জন্য ডিভাইসের এমএল মডেল বা তাৎক্ষণিক অফলাইন রূপান্তর ব্যবহৃত হবে।';
+  String get bilingualVoice => isEnglish ? 'Bilingual Voice' : 'দ্বিভাষিক ভয়েস';
+  String get clearTranslation => isEnglish ? 'Remove translation' : 'অনুবাদ সরান';
 
   // Prescription & Reminders
   String get possibleMedicines => isEnglish ? 'Possible medicines' : 'সম্ভাব্য ওষুধ';
@@ -120,6 +160,23 @@ class AppStrings {
   String get appendPage => isEnglish ? 'Append page' : 'পরবর্তী পাতা যোগ';
   String get pageAppended => isEnglish ? 'Page appended successfully' : 'পাতা সফলভাবে যোগ করা হয়েছে';
   String get liveReader => isEnglish ? 'Karaoke speech highlight' : 'লাইভ পড়ার হাইলাইট';
+
+  // Bill / Finance Analysis
+  String get billAnalysis => isEnglish ? 'Bill Analysis' : 'বিল বিশ্লেষণ';
+  String get totalAmount => isEnglish ? 'Total Amount' : 'মোট টাকা';
+  String get dueDate => isEnglish ? 'Due Date' : 'পরিশোধের শেষ তারিখ';
+  String get billerName => isEnglish ? 'Biller / Provider' : 'বিল প্রদানকারী সংস্থা';
+  String get accountNo => isEnglish ? 'Account / Meter No.' : 'হিসাব বা মিটার নম্বর';
+  String get billSummaryCopied => isEnglish ? 'Bill payment summary copied!' : 'বিল বিবরণ কপি করা হয়েছে!';
+  String get copyPaymentSummary => isEnglish ? 'Copy Payment Summary' : 'পেমেন্ট বিবরণ কপি করুন';
+  String get billPaymentDetails => isEnglish ? 'Bill & Payment Summary' : 'বিল ও পেমেন্ট বিবরণী';
+
+  // Word & Phrase Lookup
+  String get wordLookup => isEnglish ? 'Word / Phrase Lookup' : 'শব্দার্থ ও অনুবাদ';
+  String get enterWordOrPhrase => isEnglish ? 'Enter word or phrase' : 'শব্দ বা ছোট বাক্য লিখুন';
+  String get lookup => isEnglish ? 'Lookup' : 'অর্থ খুঁজুন';
+  String get wordMeaning => isEnglish ? 'Meaning' : 'অনুবাদ ও অর্থ';
+  String get documentWords => isEnglish ? 'Document Words (Tap to Translate):' : 'নথির মূল শব্দসমূহ:';
 
   // History Screen
   String get searchDocuments => isEnglish ? 'Search documents' : 'নথি খুঁজুন';

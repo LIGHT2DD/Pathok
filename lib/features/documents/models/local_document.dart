@@ -7,6 +7,8 @@ class LocalDocument {
     required this.sourcePath,
     this.thumbnailPath,
     required this.text,
+    this.translatedText,
+    this.detectedLanguage,
     required this.fileType,
     this.category = 'general',
     this.isPinned = false,
@@ -21,6 +23,8 @@ class LocalDocument {
   final String sourcePath;
   final String? thumbnailPath;
   String text;
+  String? translatedText;
+  String? detectedLanguage;
   final String fileType;
   String category;
   bool isPinned;
@@ -55,6 +59,14 @@ class LocalDocument {
       return 'bill';
     }
 
+    // Study & Books keywords
+    if (lower.contains(RegExp(
+      r'(?:chapter|lesson|textbook|lecture|homework|assignment|exam|syllabus|বই|অধ্যায়|পাঠ|পড়াশোনা|লেকচার|প্রশ্ন|পরীক্ষা|সিলেবাস)',
+      caseSensitive: false,
+    ))) {
+      return 'study';
+    }
+
     // Official Identity / Cards keywords
     if (lower.contains(RegExp(
       r'(?:nid|national id|identification|passport|birth|certificate|ভোটার|জাতীয় পরিচয়পত্র|পাসপোর্ট|জন্ম নিবন্ধন|স্মার্ট কার্ড)',
@@ -69,6 +81,8 @@ class LocalDocument {
   LocalDocument copyWith({
     String? title,
     String? text,
+    String? translatedText,
+    String? detectedLanguage,
     String? thumbnailPath,
     String? category,
     bool? isPinned,
@@ -79,6 +93,8 @@ class LocalDocument {
       sourcePath: sourcePath,
       thumbnailPath: thumbnailPath ?? this.thumbnailPath,
       text: text ?? this.text,
+      translatedText: translatedText ?? this.translatedText,
+      detectedLanguage: detectedLanguage ?? this.detectedLanguage,
       fileType: fileType,
       category: category ?? this.category,
       isPinned: isPinned ?? this.isPinned,
@@ -93,6 +109,8 @@ class LocalDocument {
         'sourcePath': sourcePath,
         if (thumbnailPath != null) 'thumbnailPath': thumbnailPath,
         'text': text,
+        if (translatedText != null) 'translatedText': translatedText,
+        if (detectedLanguage != null) 'detectedLanguage': detectedLanguage,
         'fileType': fileType,
         'category': category,
         'isPinned': isPinned,
@@ -106,6 +124,8 @@ class LocalDocument {
         sourcePath: json['sourcePath'] as String? ?? '',
         thumbnailPath: json['thumbnailPath'] as String?,
         text: json['text'] as String? ?? '',
+        translatedText: json['translatedText'] as String?,
+        detectedLanguage: json['detectedLanguage'] as String?,
         fileType: json['fileType'] as String? ?? 'image',
         category: json['category'] as String? ?? 'general',
         isPinned: json['isPinned'] as bool? ?? false,

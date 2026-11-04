@@ -1,130 +1,121 @@
-# পাঠক (Pathok)
+# পাঠক (Pathok) — All-in-One AI Document Companion
 
-Pathok is an Android-first, accessibility-focused document reading assistant for
-Bangla and English users.
+**Pathok** is an offline-first, privacy-focused intelligent document companion and reading assistant designed for users of all generations — students, professionals, families, and commuters. It bridges languages and document formats, empowering users to scan, extract, understand, translate, and listen to physical documents, receipts, study materials, and medical prescriptions.
 
-## Current milestone
+---
 
-The initial Flutter foundation includes:
+## 🌟 Key Features
 
-- Bangla-first Material 3 onboarding and navigation.
-- Persisted Bangla/English UI language switch in Settings.
-- Localized onboarding, document, reminder, backup, and settings surfaces for
-  the selected language.
-- Compact task-first onboarding and home layout without a promotional hero
-  banner.
-- Language-aware PDF export, text-to-speech, dialogs, reminders, backups, and
-  destructive actions.
-- Shared Material dialog styling and responsive content width for Chrome and
-  larger screens.
-- Settings sections are fully localized, including preferences, reminders,
-  privacy, accessibility, backup, and About content.
-- UI polish includes theme-based typography, contextual loading states,
-  responsive content widths, floating snackbars, shared dialog styling, and
-  semantic action labels.
-- Camera capture and gallery image import through the native Android picker.
-- App-private persistent document metadata and source-file copies.
-- PDF import and text PDF export.
-- On-device Bangla and English OCR through Tesseract 4 with bundled models.
-- Image file quality gating before OCR.
-- Explicit OCR result limitation messaging when model confidence is unavailable.
-- Conservative prescription-line extraction with mandatory confirmation.
-- User-selected daily medicine reminders with Android local notifications.
-- Destructive delete-all-data control for local documents, copied files, and reminders.
-- Supplied Pathok launcher branding and Tabler icon font styling.
-- Bangla text-to-speech controls using the device's installed voice.
-- History and settings surfaces designed for TalkBack and large-text use.
-- Searchable document history.
-- Reminder deletion with notification cancellation.
-- Document rename and individual deletion with copied-file cleanup.
-- Reminder time editing with notification rescheduling.
-- Encrypted backup export and restore through a user-selected local file.
-- Recognized text sharing through the platform share sheet.
-- Import-time image resizing/compression to reduce oversized OCR inputs.
-- Onboarding completion stored locally with `shared_preferences`.
+### 1. 🗂️ Universal Category Hubs
+Organize and access documents with one tap through interactive Bento category hubs on the Home Dashboard:
+- 📚 **Study & Books (পড়াশোনা ও বই)** — Textbooks, lecture notes, question papers, and articles.
+- 🧾 **Bills & Finances (বিল ও রসিদ)** — Utility bills, receipts, invoices, and vouchers.
+- 💊 **Prescriptions & Health (প্রেসক্রিপশন ও স্বাস্থ্য)** — Doctor prescriptions, medicine dosages, and diagnostic reports.
+- 📄 **Notices & General (সাধারণ নথি)** — Official notices, letters, office circulars, and certificates.
+- *Includes live document count badges and one-tap category filtering.*
 
-The current document list persists locally. OCR uses the Tesseract 4 Android
-engine with bundled `ben.traineddata` and `eng.traineddata` models, so the
-core OCR path does not require network access. OCR confidence is not exposed
-by the Flutter integration; users are instructed to review and edit results.
-Prescription extraction currently identifies medicine-like lines only; it does
-not diagnose or recommend treatment. Reminder scheduling requires explicit
-confirmation and a user-selected time; it does not infer a dosage schedule.
+### 2. 🧾 Smart Utility Bill & Invoice Extractor
+- Automatically analyzes electricity (DESCO, DPDC), water (WASA), gas (Titas), mobile financial services (bKash, Nagad), and general utility bills.
+- Accurately detects and extracts:
+  - **Biller / Provider**
+  - **Total Amount (মোট টাকা / ৳)**
+  - **Due Date (বিল পরিশোধের শেষ তারিখ)**
+  - **Account / Meter Number**
+- 1-tap **"Copy Summary for Mobile Banking"** to effortlessly paste bill payment details into bKash or Nagad.
 
-## Run and validate
+### 3. 🌐 Bidirectional Translation & Vocabulary Lookup (English $\leftrightarrow$ Bangla)
+- **Full Document Translation**:
+  - Script ratio analysis detects whether the document is English or Bengali.
+  - Translates **English $\rightarrow$ Bangla** and **Bangla $\rightarrow$ English** on demand.
+  - Dual-tab document interface: `[ Original (মূল পাঠ) ]` and `[ Translated (অনুবাদ) ]`.
+- **Direct Word & Sentence Selection**:
+  - Highlight any text in the document using native selection to trigger an inline **"Translate"** popup menu action.
+- **Smart Vocabulary Extractor Chips**:
+  - Automatically parses key vocabulary words from the document into clickable suggestion chips.
+- **Dedicated Word / Phrase Lookup Sheet**:
+  - Bidirectional search with instant pronunciation audio in `bn-BD` or `en-US`.
+- **Hybrid Offline Translation Architecture**:
+  - Powered on-device by Google ML Kit Neural Machine Translation (`google_mlkit_translation`).
+  - Zero-bandwidth domain-specific fallback dictionary (`PrescriptionOfflineTranslator`) for medical, study, and financial keywords.
 
-```powershell
-flutter pub get
-flutter analyze
-flutter test
-flutter run
+### 4. 🎙️ Expanded Audio Controls & Bilingual Speech
+- **Study Speed Playback**: Cycle playback speeds tailored for both close listening and rapid revision:
+  `0.75x` $\rightarrow$ `1.0x` $\rightarrow$ `1.25x` $\rightarrow$ `1.5x` $\rightarrow$ `1.75x` $\rightarrow$ `2.0x`.
+- **Live Karaoke Highlighting**: Word-by-word synchronized highlighting during voice playback.
+- **Bilingual Code-Switching Engine**: Automatically detects mixed language sentences and seamlessly switches pronunciation between native Bengali (`bn-BD`) and English (`en-US`) voices.
+- **Lock-Screen & Notification Media Controls**: Play, pause, resume, and stop speech playback directly from the lock screen and notification drawer.
+
+### 5. 🔍 Offline OCR & PDF Ingestion
+- **Camera & Gallery OCR**: Powered by on-device Tesseract 4 engine with pre-bundled `ben.traineddata` and `eng.traineddata`.
+- **Multi-Pass Image Enhancement**: Automatic grayscale conversion, adaptive thresholding, and contrast preconditioning via `ImagePreprocessor`.
+- **PDF Extraction**: Native multi-page text extraction and structured text export via `SyncfusionFlutterPdf`.
+
+### 6. 💊 Prescription Assistance & Medicine Reminders
+- Identifies dosage lines and frequencies from prescriptions.
+- Daily medicine reminder scheduling with exact Android alarms and lock-screen privacy safeguards.
+- Interactive daily checklist on the Home Dashboard with taken/pending status tracking.
+
+### 7. 🔒 Security & Privacy by Design
+- **Local AES-256-GCM Encryption**: All document metadata, notes, and reminders are encrypted at rest using an Android Keystore-backed key (`flutter_secure_storage`).
+- **Encrypted Backup & Restore**: Export and import encrypted backups protected by PBKDF2-SHA256 user passphrases.
+- **Biometric & PIN App Lock**: Locks upon app minimization and requires fingerprint or PIN authentication to open.
+- **Zero Cloud Dependence**: All OCR, parsing, and data storage run 100% locally on the device.
+
+---
+
+## 🛠️ Project Architecture
+
+```
+lib/
+├── app/
+│   ├── app.dart                   # Application root, theme management, and locale scope
+│   └── theme.dart                 # Material 3 light and dark themes
+├── core/
+│   ├── constants/                 # PathokIcons, VoiceProfiles
+│   ├── localization/              # AppStrings (100% pure Bangla or English based on Settings)
+│   ├── notifications/             # Local notifications & ongoing audio playback notification
+│   └── security/                  # AES-256-GCM encrypted persistence (SecureDataStore)
+└── features/
+    ├── auth/                      # Biometric & PIN lock screen
+    ├── documents/
+    │   ├── data/                  # DocumentRepository (secure persistence, file copies)
+    │   ├── models/                # LocalDocument model (categories, translation fields)
+    │   ├── presentation/          # HomeScreen, HomeTab (Bento hubs), DocumentScreen, HistoryTab
+    │   └── services/              # BillExtractor, LanguageDetector, PdfService, TranslationService
+    ├── ocr/                       # OfflineOcrService, ImagePreprocessor
+    ├── onboarding/                # Clean task-first onboarding flow
+    ├── prescription/              # PrescriptionService, MedicineReminder, PrescriptionDialog
+    └── settings/                  # SettingsTab (Language toggle, voice picker, theme, backups)
 ```
 
-The Android camera/gallery permissions are supplied by `image_picker`. A device
-or emulator with a compatible Bangla TTS voice is required for read-aloud.
-`flutter run -d chrome` is supported for UI review; camera, Android Keystore,
-biometric lock, Android notifications, and native Tesseract behavior must be
-validated on Android.
+---
 
-Release artifacts are generated at:
+## 🚀 Running & Building
 
-- `build/app/outputs/flutter-apk/app-debug.apk`
-- `build/app/outputs/flutter-apk/app-release.apk`
-- `build/app/outputs/bundle/release/app-release.aab`
+### 1. Run Unit & Widget Tests
+```powershell
+flutter test
+```
 
-Release tasks now fail when `android/key.properties` is missing instead of
-falling back to the debug signing key. A production keystore and Play App
-Signing configuration must be supplied before publishing.
+### 2. Run Static Analysis
+```powershell
+flutter analyze
+```
 
-For a small ARM64 development APK, use:
+### 3. Run in Chrome (Web Preview)
+```powershell
+flutter run -d chrome
+```
 
+### 4. Build Small ARM64 Android APK
+To compile an optimized, standalone 64-bit ARM APK:
 ```powershell
 flutter build apk --debug --target-platform android-arm64 --split-per-abi
 ```
+The resulting lightweight binary is generated at:
+`build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk`
 
-The resulting artifact is `build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk`.
+---
 
-## Architecture direction
-
-The app is currently a small vertical slice in `lib/main.dart` so the first
-workflow can be tested end-to-end. Before adding prescription extraction and
-encrypted persistence, the next refactor should split it into feature modules
-(`onboarding`, `documents`, `speech`, and `settings`) and introduce repositories
-plus Riverpod providers. Online OCR, if added later, must remain an explicitly
-consented fallback.
-
-## Next improvements
-
-- Add a real Bangla OCR evaluation set and report Character Error Rate and Word
-  Error Rate for printed documents and prescriptions.
-- Add native image preprocessing (crop, deskew, perspective correction,
-  contrast, blur and glare checks) before Tesseract.
-- Expose Tesseract word-level confidence through the Android bridge and
-  highlight low-confidence words for review.
-- Add reminder edit, snooze, and multiple-times-per-day workflows.
-- Add a production CI pipeline and configure a user-owned upload keystore
-  before Play publishing.
-
-The repository now includes a GitHub Actions validation workflow for analyzer,
-tests, and a debug APK build. Native crop/deskew and word-level confidence
-still require an Android bridge and device validation; the current OCR flow
-uses import-time image resizing and the bundled offline models.
-
-Backups are encrypted payload exports intended for the same installation/key
-chain. They are not cloud sync and cannot be restored after the secure-storage
-key is permanently lost.
-
-## Security notes
-
-Document metadata, OCR text, and confirmed reminder records are encrypted with
-AES-GCM. The encryption key is stored through Android Keystore-backed
-`flutter_secure_storage`. Existing plaintext metadata is migrated once and
-removed from `shared_preferences`. App lock uses the device biometric or PIN
-through `local_auth`, and delete-all-data removes encrypted records, copied
-files, and scheduled notifications.
-
-The app lock re-authenticates when a locked app returns from the background.
-Reminder notifications use generic text and private Android visibility so
-medicine names are not displayed on the lock screen. Release builds require a
-user-owned production signing key; configure a production keystore and Play
-App Signing before publishing.
+## 📜 License
+Private & Proprietary. All rights reserved.

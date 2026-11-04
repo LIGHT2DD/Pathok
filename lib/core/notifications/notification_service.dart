@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -12,6 +13,7 @@ class ReminderNotificationService {
   static const int _audioNotificationId = 999999;
 
   Future<void> initialize() async {
+    if (kIsWeb) return;
     tz.initializeTimeZones();
     const settings = InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
@@ -25,6 +27,7 @@ class ReminderNotificationService {
   }
 
   Future<void> schedule(MedicineReminder reminder) async {
+    if (kIsWeb) return;
     final now = tz.TZDateTime.now(tz.local);
     var scheduled = tz.TZDateTime(
       tz.local,
@@ -91,6 +94,7 @@ class ReminderNotificationService {
     required bool isPlaying,
     required String voiceLabel,
   }) async {
+    if (kIsWeb) return;
     final androidDetails = AndroidNotificationDetails(
       'pathok_audio_reader',
       'Pathok Audio Reader',
@@ -124,13 +128,18 @@ class ReminderNotificationService {
 
   /// Cancels the ongoing lock-screen and status-bar audio notification
   Future<void> cancelAudioPlaybackNotification() async {
+    if (kIsWeb) return;
     await _plugin.cancel(id: _audioNotificationId);
   }
 
-  Future<void> cancelAll() => _plugin.cancelAll();
+  Future<void> cancelAll() async {
+    if (kIsWeb) return;
+    await _plugin.cancelAll();
+  }
 
-  Future<void> cancel(MedicineReminder reminder) {
-    return _plugin.cancel(id: notificationId(reminder));
+  Future<void> cancel(MedicineReminder reminder) async {
+    if (kIsWeb) return;
+    await _plugin.cancel(id: notificationId(reminder));
   }
 
   int notificationId(MedicineReminder reminder) {

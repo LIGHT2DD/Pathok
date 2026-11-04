@@ -32,6 +32,8 @@ void main() {
         sourcePath: '/data/presc.jpg',
         thumbnailPath: '/data/presc_thumb.jpg',
         text: 'Napa 500mg',
+        translatedText: 'নাপা ৫০০ মি.গ্রা.',
+        detectedLanguage: 'English (95%)',
         fileType: 'image',
         category: 'prescription',
         isPinned: true,
@@ -45,6 +47,8 @@ void main() {
       expect(restored.sourcePath, equals('/data/presc.jpg'));
       expect(restored.thumbnailPath, equals('/data/presc_thumb.jpg'));
       expect(restored.text, equals('Napa 500mg'));
+      expect(restored.translatedText, equals('নাপা ৫০০ মি.গ্রা.'));
+      expect(restored.detectedLanguage, equals('English (95%)'));
       expect(restored.fileType, equals('image'));
       expect(restored.category, equals('prescription'));
       expect(restored.isPinned, isTrue);
