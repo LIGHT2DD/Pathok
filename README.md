@@ -45,9 +45,13 @@ Organize and access documents with one tap through interactive Bento category hu
 - **Bilingual Code-Switching Engine**: Automatically detects mixed language sentences and seamlessly switches pronunciation between native Bengali (`bn-BD`) and English (`en-US`) voices.
 - **Lock-Screen & Notification Media Controls**: Play, pause, resume, and stop speech playback directly from the lock screen and notification drawer.
 
-### 5. 🔍 Offline OCR & PDF Ingestion
-- **Camera & Gallery OCR**: Powered by on-device Tesseract 4 engine with pre-bundled `ben.traineddata` and `eng.traineddata`.
-- **Multi-Pass Image Enhancement**: Automatic grayscale conversion, adaptive thresholding, and contrast preconditioning via `ImagePreprocessor`.
+### 5. 🔍 Enhanced Offline OCR & Document Cleaning
+- **Lossless Preprocessing Engine**: Ingests images via lossless PNG processing (`ImagePreprocessor`), avoiding lossy JPEG compression artifacts that distort Bengali glyphs and diacritics.
+- **Smart Text Sanitizer & Layout Reconstructor**:
+  - `OcrTextSanitizer.sanitize()`: Filters out isolated non-linguistic noise characters (`~`, `^`, `|`, `_`, `«`, `»`, `§`), normalizes stray vertical pipes to Bengali dāri (`।`), and repairs broken spacing between Bengali consonants and vowel matras (e.g. `ক ার` $\rightarrow$ `কার`).
+  - `OcrTextSanitizer.formatLayout()`: Reconstructs fragmented OCR line breaks into natural, flowing paragraphs while intelligently preserving bulleted lists, numeric points (`১.`, `1.`), and section headers.
+- **On-Device Tesseract 4**: Pre-bundled with `ben.traineddata` and `eng.traineddata` for 100% offline, zero-latency text recognition.
+- **Robust Image Picker & File Fallback**: Native gallery and camera intent support with automatic Android Storage Access Framework fallback for complete device compatibility.
 - **PDF Extraction**: Native multi-page text extraction and structured text export via `SyncfusionFlutterPdf`.
 
 ### 6. 💊 Prescription Assistance & Medicine Reminders
@@ -107,13 +111,32 @@ flutter analyze
 flutter run -d chrome
 ```
 
-### 4. Build Small ARM64 Android APK
-To compile an optimized, standalone 64-bit ARM APK:
+### 4. Build Optimized Android Release APKs (Split-per-ABI)
+Compiles standalone, highly optimized release APKs split by target CPU architecture:
 ```powershell
-flutter build apk --debug --target-platform android-arm64 --split-per-abi
+flutter build apk --release --split-per-abi
 ```
-The resulting lightweight binary is generated at:
-`build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk`
+Generated binaries:
+- **ARM64 (Modern 64-bit devices)**: `build/app/outputs/flutter-apk/app-arm64-v8a-release.apk` (~49.5 MB)
+- **ARMv7 (Legacy 32-bit devices)**: `build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk` (~41.1 MB)
+- **x86_64 (Emulators / ChromeOS)**: `build/app/outputs/flutter-apk/app-x86_64-release.apk` (~52.3 MB)
+
+### 5. Build Google Play Release App Bundle (.aab)
+Generates the production App Bundle with Google Play dynamic delivery and Brotli compression (delivering a ~26–28 MB download footprint on user devices):
+```powershell
+flutter build appbundle --release
+```
+Generated bundle:
+- `build/app/outputs/bundle/release/app-release.aab`
+
+---
+
+## ⚡ Size Reduction Techniques Applied
+1. **ABI Splitting**: Strips unneeded foreign architecture native libraries (`.so`), reducing single-APK sizes by over 40% compared to universal fat APKs.
+2. **Resource Shrinking & ProGuard Repackaging**: Dead code elimination and bytecode shrinking via Android R8 (`isShrinkResources = true`, `isMinifyEnabled = true`, `-allowaccessmodification`, `-repackageclasses`).
+3. **Locale Stripping**: Prunes unused foreign AndroidX and Play Services translation resources with `resConfigs("en", "bn")`.
+4. **Icon Font Tree-Shaking**: Strips unreferenced glyphs from `TablerIcons` and `MaterialIcons`, reducing icon font footprint by 99.5%.
+5. **Lossless Pipeline & Asset Cleanliness**: Excludes duplicate Kotlin debug metadata and Gradle build version manifests from the production archive.
 
 ---
 

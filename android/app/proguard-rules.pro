@@ -1,3 +1,7 @@
+# Deep R8 bytecode optimization & dead code reduction
+-allowaccessmodification
+-repackageclasses
+
 # Flutter framework & plugins
 -keep class io.flutter.app.** { *; }
 -keep class io.flutter.plugin.** { *; }
