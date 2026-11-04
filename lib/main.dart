@@ -7,6 +7,10 @@ export 'app/app.dart' show PathokApp;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await ReminderNotificationService.instance.initialize();
+  try {
+    await ReminderNotificationService.instance.initialize();
+  } catch (e, stack) {
+    debugPrint('Failed to initialize ReminderNotificationService at startup: $e\n$stack');
+  }
   runApp(const PathokApp());
 }

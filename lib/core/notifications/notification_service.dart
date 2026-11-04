@@ -14,16 +14,28 @@ class ReminderNotificationService {
 
   Future<void> initialize() async {
     if (kIsWeb) return;
-    tz.initializeTimeZones();
-    const settings = InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-    );
-    await _plugin.initialize(settings: settings);
+    try {
+      tz.initializeTimeZones();
+      const settings = InitializationSettings(
+        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      );
+      await _plugin.initialize(settings: settings);
 
-    final androidImplementation = _plugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-    await androidImplementation?.requestNotificationsPermission();
-    await androidImplementation?.requestExactAlarmsPermission();
+      final androidImplementation = _plugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      try {
+        await androidImplementation?.requestNotificationsPermission();
+      } catch (e) {
+        debugPrint('Notification permission request error: $e');
+      }
+      try {
+        await androidImplementation?.requestExactAlarmsPermission();
+      } catch (e) {
+        debugPrint('Exact alarms permission request error: $e');
+      }
+    } catch (e, stack) {
+      debugPrint('Notification plugin initialization error: $e\n$stack');
+    }
   }
 
   Future<void> schedule(MedicineReminder reminder) async {

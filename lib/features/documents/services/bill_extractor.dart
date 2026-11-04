@@ -17,14 +17,36 @@ class BillExtractionResult {
 }
 
 class BillExtractor {
+  static final RegExp _billIndicatorRegex = RegExp(
+    r'(?:bill|invoice|receipt|vat|tax|total|amount|payable|bdt|tk|ডেসকো|ডিপিডিসি|ওয়াসা|তিতাস|পল্লী বিদ্যুৎ|টাকা|রসিদ|ভাউচার|বিল|মিটার|পরিশোধ)',
+    caseSensitive: false,
+  );
+
+  static final RegExp _amountRegex = RegExp(
+    r'(?:total\s*amount|total\s*payable|net\s*payable|bill\s*amount|amount|total|সর্বমোট|মোট\s*টাকা|মোট|পরিশোধযোগ্য|বিল)\s*[:=]?\s*(?:bdt|tk|টাকা|৳)?\s*([0-9,]+(?:\.[0-9]{1,2})?|[০-৯,]+(?:\.[০-৯]{1,2})?)',
+    caseSensitive: false,
+  );
+
+  static final RegExp _currencyFallbackRegex = RegExp(
+    r'(?:৳|bdt|tk\.?)\s*([0-9,]+(?:\.[0-9]{1,2})?|[০-৯,]+(?:\.[০-৯]{1,2})?)',
+    caseSensitive: false,
+  );
+
+  static final RegExp _dueDateRegex = RegExp(
+    r'(?:due\s*date|last\s*date|pay\s*by|last\s*payment\s*date|bill\s*date|পরিশোধের\s*শেষ\s*তারিখ|শেষ\s*তারিখ|বিলের\s*তারিখ)\s*[:=]?\s*([0-9]{1,2}[\/.-][0-9]{1,2}[\/.-][0-9]{2,4}|[০-৯]{1,2}[\/.-][০-৯]{1,2}[\/.-][০-৯]{2,4}|[0-9]{1,2}\s+[a-zA-Z]+(?:\s+[0-9]{2,4})?|[০-৯]{1,2}\s+(?:জানুয়ারি|ফেব্রুয়ারি|মার্চ|এপ্রিল|মে|জুন|জুলাই|আগস্ট|সেপ্টেম্বর|অক্টোবর|নভেম্বর|ডিসেম্বর)(?:\s+[০-৯]{2,4})?)',
+    caseSensitive: false,
+  );
+
+  static final RegExp _accRegex = RegExp(
+    r'(?:meter|account|consumer|bill|sms|মিটার|হিসাব|গ্রাহক)\s*(?:no|number|num|নম্বর|নং)?\s*[:=]?\s*([0-9a-zA-Z-]*[0-9০-৯]{4,20}[0-9a-zA-Z-]*)',
+    caseSensitive: false,
+  );
+
   static BillExtractionResult extract(String text, String title) {
     final lower = '$title\n$text'.toLowerCase();
 
     // Check if document has bill or financial indicators
-    final isBill = lower.contains(RegExp(
-      r'(?:bill|invoice|receipt|vat|tax|total|amount|payable|bdt|tk|ডেসকো|ডিপিডিসি|ওয়াসা|তিতাস|পল্লী বিদ্যুৎ|টাকা|রসিদ|ভাউচার|বিল|মিটার|পরিশোধ)',
-      caseSensitive: false,
-    ));
+    final isBill = lower.contains(_billIndicatorRegex);
 
     if (!isBill) {
       return const BillExtractionResult(isBill: false);
@@ -57,11 +79,7 @@ class BillExtractor {
     }
 
     // 2. Extract Total Amount
-    final amountRegex = RegExp(
-      r'(?:total\s*amount|total\s*payable|net\s*payable|bill\s*amount|amount|total|সর্বমোট|মোট\s*টাকা|মোট|পরিশোধযোগ্য|বিল)\s*[:=]?\s*(?:bdt|tk|টাকা|৳)?\s*([0-9,]+(?:\.[0-9]{1,2})?|[০-৯,]+(?:\.[০-৯]{1,2})?)',
-      caseSensitive: false,
-    );
-    final amountMatch = amountRegex.firstMatch('$title\n$text');
+    final amountMatch = _amountRegex.firstMatch('$title\n$text');
     if (amountMatch != null) {
       final rawAmt = amountMatch.group(1)?.trim();
       if (rawAmt != null && rawAmt.isNotEmpty) {
@@ -71,8 +89,7 @@ class BillExtractor {
 
     // Fallback amount check for currency symbols followed by numbers
     if (totalAmount == null) {
-      final currencyRegex = RegExp(r'(?:৳|bdt|tk\.?)\s*([0-9,]+(?:\.[0-9]{1,2})?|[০-৯,]+(?:\.[০-৯]{1,2})?)', caseSensitive: false);
-      final currMatch = currencyRegex.firstMatch('$title\n$text');
+      final currMatch = _currencyFallbackRegex.firstMatch('$title\n$text');
       if (currMatch != null) {
         final rawAmt = currMatch.group(1)?.trim();
         if (rawAmt != null && rawAmt.isNotEmpty) {
@@ -82,21 +99,13 @@ class BillExtractor {
     }
 
     // 3. Extract Due Date
-    final dateRegex = RegExp(
-      r'(?:due\s*date|last\s*date|pay\s*by|last\s*payment\s*date|bill\s*date|পরিশোধের\s*শেষ\s*তারিখ|শেষ\s*তারিখ|বিলের\s*তারিখ)\s*[:=]?\s*([0-9]{1,2}[\/.-][0-9]{1,2}[\/.-][0-9]{2,4}|[০-৯]{1,2}[\/.-][০-৯]{1,2}[\/.-][০-৯]{2,4}|[0-9]{1,2}\s+[a-zA-Z]+(?:\s+[0-9]{2,4})?|[০-৯]{1,2}\s+(?:জানুয়ারি|ফেব্রুয়ারি|মার্চ|এপ্রিল|মে|জুন|জুলাই|আগস্ট|সেপ্টেম্বর|অক্টোবর|নভেম্বর|ডিসেম্বর)(?:\s+[০-৯]{2,4})?)',
-      caseSensitive: false,
-    );
-    final dateMatch = dateRegex.firstMatch('$title\n$text');
+    final dateMatch = _dueDateRegex.firstMatch('$title\n$text');
     if (dateMatch != null) {
       dueDate = dateMatch.group(1)?.trim();
     }
 
     // 4. Extract Account / Meter Number (must contain digits)
-    final accRegex = RegExp(
-      r'(?:meter|account|consumer|bill|sms|মিটার|হিসাব|গ্রাহক)\s*(?:no|number|num|নম্বর|নং)?\s*[:=]?\s*([0-9a-zA-Z-]*[0-9০-৯]{4,20}[0-9a-zA-Z-]*)',
-      caseSensitive: false,
-    );
-    final accMatch = accRegex.firstMatch('$title\n$text');
+    final accMatch = _accRegex.firstMatch('$title\n$text');
     if (accMatch != null) {
       accountNumber = accMatch.group(1)?.trim();
     }

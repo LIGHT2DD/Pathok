@@ -42,7 +42,8 @@ class SecureDataStore {
       _cachedPayload = jsonDecode(utf8.decode(plain)) as Map<String, dynamic>;
       return Map<String, dynamic>.from(_cachedPayload!);
     } on Exception {
-      throw StateError('স্থানীয় encrypted data পড়া যায়নি।');
+      _cachedPayload = <String, dynamic>{};
+      return <String, dynamic>{};
     }
   }
 

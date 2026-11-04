@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -63,6 +64,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
   bool _userSelectedLanguage = false;
   double _speechRate = 0.45; // ~1.0x normal speech rate
   final ValueNotifier<TextRange?> _karaokeWordRange = ValueNotifier<TextRange?>(null);
+  Timer? _debounceSaveTimer;
 
   LanguageDetectionResult? _languageResult;
   bool _isCodeSwitchingActive = false;
@@ -165,6 +167,10 @@ class _DocumentScreenState extends State<DocumentScreen> {
 
   @override
   void dispose() {
+    if (_debounceSaveTimer?.isActive ?? false) {
+      _debounceSaveTimer?.cancel();
+      widget.onChanged();
+    }
     _controller.dispose();
     _translatedController.dispose();
     _karaokeWordRange.dispose();
@@ -172,6 +178,15 @@ class _DocumentScreenState extends State<DocumentScreen> {
     ReminderNotificationService.instance.cancelAudioPlaybackNotification();
     _ocrService.close();
     super.dispose();
+  }
+
+  void _debounceSave() {
+    _debounceSaveTimer?.cancel();
+    _debounceSaveTimer = Timer(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        widget.onChanged();
+      }
+    });
   }
 
   Future<void> _processImageOcr() async {
@@ -1618,7 +1633,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
                                     _detectSpeechLanguageFromText(value);
                                   }
                                   widget.document.updatedAt = DateTime.now();
-                                  widget.onChanged();
+                                  _debounceSave();
                                 },
                                 decoration: InputDecoration(
                                   hintText: _selectedTabIndex == 1

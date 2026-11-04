@@ -52,13 +52,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadState() async {
-    _documents
-      ..clear()
-      ..addAll(await _documentRepository.getDocuments());
+    try {
+      final docs = await _documentRepository.getDocuments();
+      _documents
+        ..clear()
+        ..addAll(docs);
+    } catch (e) {
+      debugPrint('Error loading documents at startup: $e');
+    }
 
-    _reminders
-      ..clear()
-      ..addAll(await _prescriptionService.loadReminders());
+    try {
+      final rems = await _prescriptionService.loadReminders();
+      _reminders
+        ..clear()
+        ..addAll(rems);
+    } catch (e) {
+      debugPrint('Error loading reminders at startup: $e');
+    }
 
     if (mounted) {
       setState(() {

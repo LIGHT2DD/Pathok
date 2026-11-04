@@ -96,12 +96,10 @@ class PrescriptionOfflineTranslator {
     '9': '৯',
   };
 
+  static final RegExp _digitPattern = RegExp(r'[0-9]');
+
   static String toBengaliDigits(String input) {
-    var res = input;
-    _digitMap.forEach((en, bn) {
-      res = res.replaceAll(en, bn);
-    });
-    return res;
+    return input.replaceAllMapped(_digitPattern, (m) => _digitMap[m[0]] ?? m[0]!);
   }
 
   static String translateToBengali(String text) {
