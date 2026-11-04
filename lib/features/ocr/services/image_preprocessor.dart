@@ -20,8 +20,8 @@ class ImagePreprocessor {
 
   /// Single-pass image quality assessment and OCR preconditioning.
   /// Decodes image once in a background isolate, validates readability,
-  /// bakes EXIF orientation, clamps dimensions, converts to high-contrast grayscale,
-  /// and writes an optimized intermediate JPEG for Tesseract.
+  /// bakes EXIF orientation, clamps dimensions, converts to gentle grayscale,
+  /// and writes a lossless intermediate PNG (0 compression artifacts) for Tesseract.
   static Future<ProcessedImageResult> processAndPrepare(String path) async {
     final file = File(path);
     if (!await file.exists()) {
@@ -35,7 +35,7 @@ class ImagePreprocessor {
     }
 
     final tempDir = await getTemporaryDirectory();
-    final targetPath = '${tempDir.path}/ocr_prep_${DateTime.now().microsecondsSinceEpoch}.jpg';
+    final targetPath = '${tempDir.path}/ocr_prep_${DateTime.now().microsecondsSinceEpoch}.png';
 
     return await Isolate.run(() {
       try {
@@ -78,12 +78,9 @@ class ImagePreprocessor {
         // Fix EXIF rotation from mobile cameras
         image = img.bakeOrientation(image);
 
-        // Auto-crop noisy border margins (deskew & edge trimming)
-        image = _autoCropDocument(image);
-
         // Optimal scaling for OCR:
-        // Upscale small crops (< 1000px) so Bengali glyph diacritics are sharp
-        if (image.width < 1000 && image.height < 1000) {
+        // Upscale small crops (< 900px) so Bengali glyph diacritics are sharp
+        if (image.width < 900 && image.height < 900) {
           final scale = 1200 / (image.width > image.height ? image.width : image.height);
           image = img.copyResize(
             image,
@@ -91,20 +88,21 @@ class ImagePreprocessor {
             height: (image.height * scale).toInt(),
             interpolation: img.Interpolation.linear,
           );
-        } else if (image.width > 2200 || image.height > 2200) {
-          // Clamp overly large images to prevent excessive memory usage
+        } else if (image.width > 2400 || image.height > 2400) {
+          // Clamp overly large images to prevent excessive memory usage while keeping high DPI
           if (image.width > image.height) {
-            image = img.copyResize(image, width: 2200);
+            image = img.copyResize(image, width: 2400);
           } else {
-            image = img.copyResize(image, height: 2200);
+            image = img.copyResize(image, height: 2400);
           }
         }
 
-        // Illumination normalization: lifts uneven room shadows and enhances faint Bangla diacritics
+        // Illumination normalization: gentle contrast enhancement without bleaching diacritics
         image = _normalizeShadowsAndEnhance(image);
 
-        // Optimal quality (82): fast encoding, lightweight file, no degradation in OCR accuracy
-        final encoded = img.encodeJpg(image, quality: 82);
+        // Lossless PNG encoding: completely eliminates lossy JPEG 8x8 DCT ringing noise
+        // which Tesseract commonly misinterprets as punctuation or trash characters
+        final encoded = img.encodePng(image);
         File(targetPath).writeAsBytesSync(encoded);
 
         return ProcessedImageResult(
@@ -198,33 +196,16 @@ class ImagePreprocessor {
     }
   }
 
-  /// Trims outer borders and background margins for cleaner page edge alignment
-  static img.Image _autoCropDocument(img.Image image) {
-    if (image.width < 300 || image.height < 300) return image;
-
-    // Crop 1.5% outer edge to eliminate camera sensor black borders, fingers, or table shadows
-    final cropX = (image.width * 0.015).toInt();
-    final cropY = (image.height * 0.015).toInt();
-    final cropW = image.width - (cropX * 2);
-    final cropH = image.height - (cropY * 2);
-
-    if (cropW > 150 && cropH > 150) {
-      return img.copyCrop(image, x: cropX, y: cropY, width: cropW, height: cropH);
-    }
-    return image;
-  }
-
-  /// Normalizes illumination to eliminate room shadows across angled prescription photos
+  /// Normalizes illumination to eliminate room shadows while preserving fine Bangla diacritics
   static img.Image _normalizeShadowsAndEnhance(img.Image image) {
     var enhanced = img.grayscale(image);
 
-    // Adaptive illumination: Gamma 0.92 lifts dark corner shadows,
-    // Contrast 1.30 separates pencil/ballpen ink from yellowish paper
+    // Balanced contrast & gamma: removes faint shadows without bleaching out light ink or handwriting
     enhanced = img.adjustColor(
       enhanced,
-      contrast: 1.30,
-      brightness: 1.05,
-      gamma: 0.92,
+      contrast: 1.12,
+      brightness: 1.00,
+      gamma: 0.98,
     );
 
     return enhanced;

@@ -90,23 +90,53 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     final strings = AppStrings.of(context);
-    final file = await ImagePicker().pickImage(
-      source: source,
-      maxWidth: 1920,
-      maxHeight: 1920,
-      imageQuality: 85,
-    );
-    if (!mounted || file == null) return;
+    String? selectedPath;
 
-    final document = await _documentRepository.importFile(
-      sourcePath: file.path,
-      title: '${strings.documentDetails} ${_documents.length + 1}',
-      fileType: 'image',
-    );
+    try {
+      final file = await ImagePicker().pickImage(
+        source: source,
+        maxWidth: 2400,
+        maxHeight: 2400,
+        imageQuality: 95,
+      );
+      selectedPath = file?.path;
+    } catch (e) {
+      debugPrint('ImagePicker failed, trying FilePicker fallback: $e');
+    }
 
-    setState(() => _documents.insert(0, document));
-    await _saveDocuments();
-    _openDocument(document);
+    // Fallback to FilePicker if gallery picking via ImagePicker failed or returned empty
+    if (selectedPath == null && source == ImageSource.gallery) {
+      try {
+        final result = await FilePicker.pickFiles(
+          type: FileType.image,
+        );
+        if (result.isNotEmpty && result.first.path != null) {
+          selectedPath = result.first.path;
+        }
+      } catch (e) {
+        debugPrint('FilePicker fallback error: $e');
+      }
+    }
+
+    if (!mounted || selectedPath == null) return;
+
+    try {
+      final document = await _documentRepository.importFile(
+        sourcePath: selectedPath,
+        title: '${strings.documentDetails} ${_documents.length + 1}',
+        fileType: 'image',
+      );
+
+      setState(() => _documents.insert(0, document));
+      await _saveDocuments();
+      _openDocument(document);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('ছবি লোড করা সম্ভব হয়নি: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _pickPdf() async {
